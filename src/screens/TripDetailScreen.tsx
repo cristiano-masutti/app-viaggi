@@ -252,7 +252,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
           currentUserId={profile.id}
           topPadding={headerHeight}
           bottomPadding={bottomPadding}
-          onScroll={memoriesScroll.onScrollJS}
+          scrollComponent={memoriesScroll.scrollComponent}
           onNewMemory={() => setNewMemoryOpen(true)}
           onOpenPhoto={(memory) => setViewerPhotoId(memory.id)}
           onReact={react}
@@ -264,7 +264,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
           trip={trip}
           topPadding={headerHeight}
           bottomPadding={bottomPadding}
-          onScroll={organizeScroll.onScroll}
+          scrollRef={organizeScroll.scrollRef}
           onEdit={setEditing}
           onOpenDoc={setViewerDoc}
         />

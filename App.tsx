@@ -12,6 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { AppProvider } from '@/store/AppStore';
+import { OfflineLibraryProvider } from '@/store/OfflineLibrary';
 import { palette } from '@/theme/palette';
 
 /**
@@ -22,7 +23,9 @@ import { palette } from '@/theme/palette';
  *    gesto nativo (press, pinch, trascinamento dei fogli) riceve eventi;
  * 2. `SafeAreaProvider` prima di chi misura gli inset (toast, header, tab bar);
  * 3. `BottomSheetModalProvider` ospita il portale dei fogli di editing;
- * 4. `AppProvider` tiene lo stato, `ToastProvider` le conferme, e sotto c'è il router.
+ * 4. `AppProvider` tiene lo stato; `OfflineLibraryProvider` sta subito sotto
+ *    perché legge i documenti da lì e li scrive sul disco appena compaiono;
+ * 5. `ToastProvider` le conferme, e sotto c'è il router.
  */
 export default function App() {
   return (
@@ -30,10 +33,12 @@ export default function App() {
       <SafeAreaProvider>
         <BottomSheetModalProvider>
           <AppProvider>
-            <ToastProvider>
-              <StatusBar style="light" />
-              <RootNavigator />
-            </ToastProvider>
+            <OfflineLibraryProvider>
+              <ToastProvider>
+                <StatusBar style="light" />
+                <RootNavigator />
+              </ToastProvider>
+            </OfflineLibraryProvider>
           </AppProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>

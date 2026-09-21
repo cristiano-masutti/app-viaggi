@@ -1,4 +1,4 @@
-import { Download, FileText, Share2, X } from 'lucide-react-native';
+import { CloudOff, FileText, HardDriveDownload, Share2, ShieldCheck, X } from 'lucide-react-native';
 import React from 'react';
 import { Modal, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -8,6 +8,8 @@ import { GhostButton } from '@/components/ui/Buttons';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useToast } from '@/components/ui/Toast';
+import { formatBytes } from '@/lib/offlineDocuments';
+import { useDocumentSource } from '@/store/OfflineLibrary';
 import { palette } from '@/theme/palette';
 import type { DocumentRef } from '@/types';
 
@@ -25,9 +27,13 @@ interface Props {
  * si vede solo il tasto. Regola applicata ovunque, dal voucher dell'alloggio al
  * modulo doganale — niente codici aperti a display mentre si scorre in
  * aeroporto.
+ *
+ * Il contenuto viene letto dalla copia sul telefono, non dalla rete: aprire un
+ * voucher in aereo deve funzionare esattamente come aprirlo a casa.
  */
 export function DocumentViewerModal({ doc, onClose }: Props) {
   const toast = useToast();
+  const { uri, entry } = useDocumentSource(doc);
 
   return (
     <Modal visible={!!doc} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
@@ -64,7 +70,7 @@ export function DocumentViewerModal({ doc, onClose }: Props) {
                 {doc.kind === 'pdf' ? <PdfSheet doc={doc} /> : null}
                 {doc.kind === 'image' ? (
                   <SmartImage
-                    uri={doc.uri}
+                    uri={uri}
                     contentFit="contain"
                     className="w-full rounded-card"
                     style={{ aspectRatio: 3 / 4 }}
@@ -80,16 +86,15 @@ export function DocumentViewerModal({ doc, onClose }: Props) {
               </Animated.View>
             </ScrollView>
 
-            <View className="flex-row gap-2.5 border-t border-ink-700 px-[18px] pb-2 pt-3.5">
-              <GhostButton
-                label="Salva offline"
-                className="flex-1"
-                icon={<Download size={15} color={palette.text} strokeWidth={2} />}
-                onPress={() => toast.show('Documento disponibile offline')}
-              />
+            {/*
+              Niente tasto "Salva offline": il documento è già sul telefono da
+              quando è entrato nel viaggio. Qui resta solo il suo stato — un
+              fatto da leggere, non un'azione da ricordarsi di fare.
+            */}
+            <View className="gap-2.5 border-t border-ink-700 px-[18px] pb-2 pt-3.5">
+              <OfflineLine state={entry.state} bytes={entry.bytes} />
               <GhostButton
                 label="Condividi"
-                className="flex-1"
                 icon={<Share2 size={15} color={palette.text} strokeWidth={2} />}
                 onPress={() => toast.show('Link del documento copiato')}
               />
@@ -98,6 +103,38 @@ export function DocumentViewerModal({ doc, onClose }: Props) {
         ) : null}
       </SafeAreaView>
     </Modal>
+  );
+}
+
+/** Stato della copia locale, in una riga sola sopra le azioni. */
+function OfflineLine({ state, bytes }: { state: string; bytes?: number }) {
+  if (state === 'failed') {
+    return (
+      <View className="flex-row items-center gap-2 rounded-[14px] border border-danger/25 bg-danger/[0.08] px-3.5 py-2.5">
+        <CloudOff size={14} color={palette.danger} strokeWidth={2.2} />
+        <Text className="flex-1 text-[12.5px] font-bold text-danger">
+          Non salvato sul telefono: senza rete non sarà leggibile.
+        </Text>
+      </View>
+    );
+  }
+
+  if (state !== 'saved') {
+    return (
+      <View className="flex-row items-center gap-2 rounded-[14px] border border-ink-700 bg-ink-900 px-3.5 py-2.5">
+        <HardDriveDownload size={14} color={palette.accentSoft} strokeWidth={2.2} />
+        <Text className="flex-1 text-[12.5px] font-bold text-mist">Salvataggio sul telefono in corso…</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-row items-center gap-2 rounded-[14px] border border-success/25 bg-success/[0.08] px-3.5 py-2.5">
+      <ShieldCheck size={14} color={palette.success} strokeWidth={2.2} />
+      <Text className="flex-1 text-[12.5px] font-bold text-success">
+        {`Salvato sul telefono${bytes ? ` · ${formatBytes(bytes)}` : ''} · leggibile senza rete`}
+      </Text>
+    </View>
   );
 }
 

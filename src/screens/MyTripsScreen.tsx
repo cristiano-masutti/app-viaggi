@@ -33,7 +33,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
   const [tab, setTab] = useState<TripStatus>('ongoing');
   const [headerHeight, setHeaderHeight] = useState(180);
   const [booting, setBooting] = useState(true);
-  const { scrollY, onScrollJS } = useHeaderScroll();
+  const { scrollY, scrollComponent } = useHeaderScroll();
 
   const trips = useTripsByStatus(tab);
 
@@ -109,8 +109,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
           getItemType={(item) => item.status}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          onScroll={onScrollJS}
-          scrollEventThrottle={16}
+          renderScrollComponent={scrollComponent}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             paddingTop: headerHeight + 16,

@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Alert, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { OfflineBadge } from '@/components/offline/OfflineStatus';
 import { GhostButton } from '@/components/ui/Buttons';
 import { Card, SectionLabel } from '@/components/ui/Card';
 import { CopyChip } from '@/components/ui/CopyChip';
@@ -16,6 +17,7 @@ import { BIO_MAX_LENGTH } from '@/mock/profile';
 import { TAB_BAR_SPACE } from '@/navigation/FloatingTabBar';
 import type { MainTabScreenProps } from '@/navigation/types';
 import { useAppActions, useProfile } from '@/store/AppStore';
+import { PROFILE_PASSPORT_DOC_ID, useOfflineDocument } from '@/store/OfflineLibrary';
 import { palette } from '@/theme/palette';
 
 /**
@@ -34,6 +36,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio);
   const [passportZoom, setPassportZoom] = useState(false);
+  const passportOffline = useOfflineDocument(PROFILE_PASSPORT_DOC_ID);
 
   const pickImage = useCallback(async (onPicked: (uri: string) => void) => {
     haptics.tap();
@@ -172,6 +175,9 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                   Collegato automaticamente a ogni viaggio
                 </Text>
               </View>
+              {/* La scansione segue la stessa regola dei documenti di viaggio:
+                  sta sul telefono, non va scaricata al controllo passaporti. */}
+              <OfflineBadge docId={PROFILE_PASSPORT_DOC_ID} />
             </View>
 
             <View className="flex-row gap-2.5">
@@ -287,8 +293,9 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
         </Animated.View>
       </ScrollView>
 
+      {/* Si apre dalla copia locale quando c'è: al gate non si dipende dalla rete. */}
       <ImageZoomModal
-        uri={passportZoom ? profile.passport.photoUri : null}
+        uri={passportZoom ? (passportOffline.localUri ?? profile.passport.photoUri) : null}
         title="Passaporto Italiano"
         subtitle={`${profile.passport.number} · scade ${profile.passport.expiry}`}
         onClose={() => setPassportZoom(false)}

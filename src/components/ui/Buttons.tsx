@@ -114,6 +114,8 @@ interface DocButtonProps {
   onPress: () => void;
   /** Il documento non è ancora stato caricato: il tasto invita ad allegarlo. */
   empty?: boolean;
+  /** Indicatore di stato prima del chevron (es. salvataggio offline in corso). */
+  status?: React.ReactNode;
 }
 
 /**
@@ -122,7 +124,7 @@ interface DocButtonProps {
  * Nessun QR e nessuna anteprima di PDF resta aperta a display: qui c'è solo la
  * promessa del documento, il contenuto compare nel viewer a schermo intero.
  */
-export function DocButton({ label, icon, onPress, empty = false }: DocButtonProps) {
+export function DocButton({ label, icon, onPress, empty = false, status }: DocButtonProps) {
   return (
     <PressableScale
       onPress={onPress}
@@ -141,6 +143,7 @@ export function DocButton({ label, icon, onPress, empty = false }: DocButtonProp
       >
         {label}
       </Text>
+      {status}
       <ChevronRight size={16} color="rgba(244,242,237,0.35)" strokeWidth={2.2} />
     </PressableScale>
   );

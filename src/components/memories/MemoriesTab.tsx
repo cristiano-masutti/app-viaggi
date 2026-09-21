@@ -25,8 +25,8 @@ interface Props {
   topPadding: number;
   /** Spazio libero in fondo: la tab bar non c'è, ma la safe area sì. */
   bottomPadding: number;
-  /** Gestore JS: FlashList chiama `onScroll` direttamente, non accetta worklet. */
-  onScroll: HeaderScroll['onScrollJS'];
+  /** Componente di scroll che porta con sé l'animated ref dell'header. */
+  scrollComponent: HeaderScroll['scrollComponent'];
   onNewMemory: () => void;
   onOpenPhoto: (memory: PhotoMemory) => void;
   onReact: (memoryId: string, reaction: ReactionKey) => void;
@@ -47,7 +47,7 @@ export function MemoriesTab({
   currentUserId,
   topPadding,
   bottomPadding,
-  onScroll,
+  scrollComponent,
   onNewMemory,
   onOpenPhoto,
   onReact,
@@ -200,8 +200,7 @@ export function MemoriesTab({
       numColumns={2}
       keyExtractor={(item) => item.id}
       renderItem={renderPhoto}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
+      renderScrollComponent={scrollComponent}
       showsVerticalScrollIndicator={false}
       // I 5px di padding per cella compongono la gronda da 10px tra le colonne.
       contentContainerStyle={{ ...contentPadding, paddingHorizontal: 13 }}
@@ -214,8 +213,7 @@ export function MemoriesTab({
       data={notes}
       keyExtractor={(item) => item.id}
       renderItem={renderNote}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
+      renderScrollComponent={scrollComponent}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={contentPadding}
       ItemSeparatorComponent={() => <View className="h-3" />}

@@ -14,6 +14,7 @@ import React, { useMemo, useState } from 'react';
 import { Linking, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { OfflineBadge, TripOfflineStrip } from '@/components/offline/OfflineStatus';
 import { CallButton, DocButton, Divider, SoftActionButton } from '@/components/ui/Buttons';
 import { Card, CardRow, SectionHeader } from '@/components/ui/Card';
 import { CopyChip } from '@/components/ui/CopyChip';
@@ -31,7 +32,7 @@ interface Props {
   topPadding: number;
   /** Spazio libero in fondo: la tab bar non c'è, ma la safe area sì. */
   bottomPadding: number;
-  onScroll: HeaderScroll['onScroll'];
+  scrollRef: HeaderScroll['scrollRef'];
   onEdit: (target: EditTarget) => void;
   onOpenDoc: (doc: DocumentRef) => void;
 }
@@ -54,7 +55,7 @@ const TRANSPORT_ICONS: Record<TransportMode, typeof Bus> = {
  * quanto è pieno. Dove il dato non c'è compare un placeholder tratteggiato che
  * apre la stessa modale della matita.
  */
-export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit, onOpenDoc }: Props) {
+export function OrganizeTab({ trip, topPadding, bottomPadding, scrollRef, onEdit, onOpenDoc }: Props) {
   const [dayId, setDayId] = useState(() => defaultDayId(trip));
 
   const day = useMemo(() => trip.days.find((item) => item.id === dayId) ?? trip.days[0], [dayId, trip.days]);
@@ -72,8 +73,7 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
 
   return (
     <Animated.ScrollView
-      onScroll={onScroll}
-      scrollEventThrottle={16}
+      ref={scrollRef}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{
         paddingTop: topPadding + 14,
@@ -82,6 +82,12 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
         gap: 18,
       }}
     >
+      {/*
+        Stato della biblioteca offline: sta in cima perché vale per tutti i
+        documenti della tab, non per una singola card.
+      */}
+      <TripOfflineStrip trip={trip} />
+
       {/* ══ BLOCCO A · Documenti del giorno ══ */}
       <View className="gap-3.5">
         <FilterChipRow
@@ -110,7 +116,11 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
               <CopyChip value={day.stay.address} />
             </View>
             {day.stay.doc ? (
-              <DocButton label="📄 Prenotazione" onPress={() => onOpenDoc(day.stay!.doc!)} />
+              <DocButton
+                label="📄 Prenotazione"
+                status={<OfflineBadge docId={day.stay.doc.id} />}
+                onPress={() => onOpenDoc(day.stay!.doc!)}
+              />
             ) : (
               <DocButton
                 label="Allega la prenotazione"
@@ -161,7 +171,11 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
                 </View>
               </View>
               {activity.doc ? (
-                <DocButton label="🎟️ Biglietto" onPress={() => onOpenDoc(activity.doc!)} />
+                <DocButton
+                  label="🎟️ Biglietto"
+                  status={<OfflineBadge docId={activity.doc.id} />}
+                  onPress={() => onOpenDoc(activity.doc!)}
+                />
               ) : (
                 <DocButton
                   label="Allega biglietto o voucher"
@@ -198,6 +212,7 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
             />
             <DocButton
               label="🪪 Visualizza"
+              status={passport.doc ? <OfflineBadge docId={passport.doc.id} /> : null}
               onPress={() => (passport.doc ? onOpenDoc(passport.doc) : onEdit({ kind: 'passport' }))}
             />
             <Text className="text-[11.5px] font-semibold leading-[17px] text-mist">
@@ -224,6 +239,7 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
             />
             <DocButton
               label="📄 Visualizza Ricevuta/QR"
+              status={customs.doc ? <OfflineBadge docId={customs.doc.id} /> : null}
               onPress={() => (customs.doc ? onOpenDoc(customs.doc) : onEdit({ kind: 'customs' }))}
             />
           </Card>
@@ -270,6 +286,7 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
                         key={entry.id}
                         label={entry.label}
                         icon={<FileText size={15} color={palette.text} strokeWidth={2} />}
+                        status={<OfflineBadge docId={entry.doc.id} />}
                         onPress={() => onOpenDoc(entry.doc!)}
                       />
                     ) : (
@@ -315,6 +332,7 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, onScroll, onEdit,
               <DocButton
                 label="Visualizza certificato"
                 icon={<FileText size={15} color={palette.text} strokeWidth={2} />}
+                status={<OfflineBadge docId={insurance.doc.id} />}
                 onPress={() => onOpenDoc(insurance.doc!)}
               />
             ) : (
