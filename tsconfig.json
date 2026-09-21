@@ -1,0 +1,14 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    // Alias `@/…` → `src/…`. Niente `baseUrl` (deprecato da TypeScript 6): i
+    // path sono relativi a questo file, e il resolver Metro di Expo li legge
+    // esattamente allo stesso modo.
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "nativewind-env.d.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules"]
+}

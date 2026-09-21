@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Vibemakers Travel",
+    "slug": "app-viaggi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "vibemakers",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0D0D11",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0D11"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "travel.vibemakers.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Sblocca rapidamente l'app senza reinserire le credenziali.",
+        "NSPhotoLibraryUsageDescription": "Serve per scegliere la copertina del viaggio e caricare i ricordi della crew."
+      }
+    },
+    "android": {
+      "package": "travel.vibemakers.app",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0D11",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.USE_FINGERPRINT"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Sblocca rapidamente l'app senza reinserire le credenziali."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Serve per scegliere la copertina del viaggio e caricare i ricordi della crew.",
+          "cameraPermission": "Serve per scattare le foto dei ricordi direttamente dall'app."
+        }
+      ],
+      [
+        "expo-system-ui",
+        {
+          "backgroundColor": "#0D0D11"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
