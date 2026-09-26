@@ -1,0 +1,29 @@
+{
+  "name": "app-viaggi-monorepo",
+  "private": true,
+  "engines": {
+    "node": "^22.13.0 || >=24.3.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^22.13.0 || >=24.3.0",
+      "onFail": "error"
+    }
+  },
+  "scripts": {
+    "mobile:install": "npm --prefix apps/mobile install",
+    "mobile:start": "npm --prefix apps/mobile run start",
+    "mobile:ios": "npm --prefix apps/mobile run ios",
+    "mobile:android": "npm --prefix apps/mobile run android",
+    "mobile:web": "npm --prefix apps/mobile run web",
+    "mobile:typecheck": "npm --prefix apps/mobile run typecheck",
+    "mobile:doctor": "npm --prefix apps/mobile run doctor",
+    "backend:install": "npm --prefix apps/backend install",
+    "backend:dev": "npm --prefix apps/backend run dev",
+    "backend:build": "npm --prefix apps/backend run build",
+    "backend:prisma:generate": "npm --prefix apps/backend run prisma:generate",
+    "backend:prisma:migrate": "npm --prefix apps/backend run prisma:migrate",
+    "backend:prisma:migrate:init": "npm --prefix apps/backend run prisma:migrate -- --name init"
+  }
+}

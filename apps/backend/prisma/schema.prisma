@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Trip {
+  id          String      @id @default(uuid())
+  title       String
+  destination String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  assets      TripAsset[]
+}
+
+model TripAsset {
+  id           String   @id @default(uuid())
+  tripId       String
+  originalName String
+  mimeType     String
+  storagePath  String   @unique
+  publicUrl    String?
+  createdAt    DateTime @default(now())
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}

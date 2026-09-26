@@ -14,6 +14,9 @@ npm run typecheck  # tsc --noEmit
 
 > Le dipendenze native sono già allineate a Expo SDK 57: `npx expo start` basta
 > per Expo Go o per una dev build.
+>
+> Nota: in monorepo il backend è in [apps/backend/](../backend); la panoramica
+> generale è nella README root [../../README.md](../../README.md).
 
 ### Versione di Node
 
