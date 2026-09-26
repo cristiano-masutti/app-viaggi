@@ -68,9 +68,8 @@ Verificato con `npx expo prebuild --platform ios`. Quando Expo aggiornerà
 
 Tutto quello che si muove gira su **UI thread**.
 
-- `PressableScale` è il mattone di ogni elemento toccabile: il gesto è nativo
-  (`react-native-gesture-handler`), la molla è Reanimated. Al JS thread arriva
-  solo `onPress`.
+- Le azioni usano `Pressable` di React Native; il feedback aptico è gestito
+  separatamente quando serve.
 - `SegmentedSwitcher` e `FloatingTabBar` muovono **un solo** indicatore che
   scivola; anche il colore delle etichette segue la stessa molla, così testo e
   sfondo non si separano a metà transizione.
@@ -102,7 +101,7 @@ non può divergere tra classi NativeWind e prop native.
 | `ink-900` | `#16161D` | Card e superfici |
 | `ink-850` | `#1B1B24` | Input, bottoni secondari |
 | `ink-700` | `#262633` | Bordi, divider, base dello skeleton |
-| `tangerine` | `#FF5B22` | Accento primario, uno solo |
+| `tangerine` | `#C5161D` | Accento primario, uno solo |
 | `cream` | `#F7F4EA` / testo `#1C1917` | Note del diario |
 
 ### 4 · I documenti stanno sul telefono
@@ -166,7 +165,7 @@ src/
 │   ├── MainTabs.tsx         due tab (+ TODO per il futuro "Esplora")
 │   └── FloatingTabBar.tsx   barra flottante sfocata
 ├── components/
-│   ├── ui/                  design system (PressableScale, SmartImage, …)
+│   ├── ui/                  design system (bottoni, SmartImage, …)
 │   ├── offline/             riga di stato e indicatori della copia locale
 │   ├── trips/TripCards.tsx  Hero (in corso) e Standard (futuri = passati)
 │   ├── memories/            griglia, diario, tile, reazioni, modale ricordo

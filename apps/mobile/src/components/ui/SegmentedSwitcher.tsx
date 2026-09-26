@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -8,10 +8,10 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { haptics } from '@/lib/haptics';
 import { slideSpring } from '@/theme/motion';
 import { palette } from '@/theme/palette';
 
-import { PressableScale } from './PressableScale';
 
 export interface SegmentOption<T extends string> {
   key: T;
@@ -48,6 +48,7 @@ export function SegmentedSwitcher<T extends string>({
   className,
 }: Props<T>) {
   const [width, setWidth] = useState(0);
+  const segmentCount = Math.max(1, options.length);
   const activeIndex = Math.max(
     0,
     options.findIndex((option) => option.key === value),
@@ -58,7 +59,7 @@ export function SegmentedSwitcher<T extends string>({
     progress.value = withSpring(activeIndex, slideSpring);
   }, [activeIndex, progress]);
 
-  const segmentWidth = width > 0 ? (width - INSET * 2) / options.length : 0;
+  const segmentWidth = width > 0 ? (width - INSET * 2) / segmentCount : 0;
 
   const indicator = useAnimatedStyle(() => ({
     width: segmentWidth,
@@ -82,17 +83,17 @@ export function SegmentedSwitcher<T extends string>({
       ) : null}
 
       {options.map((option, index) => (
-        <PressableScale
+        <Pressable
           key={option.key}
-          haptic="select"
-          scaleTo={0.97}
           accessibilityRole="tab"
           accessibilityLabel={option.label}
           accessibilityState={{ selected: option.key === value }}
           onPress={() => {
+            haptics.select();
             if (option.key !== value) onChange(option.key);
           }}
-          className="h-11 flex-1 flex-row items-center justify-center gap-[7px]"
+          className="h-11 flex-row items-center justify-center gap-[6px] overflow-hidden px-1"
+          style={segmentWidth > 0 ? { width: segmentWidth } : { flex: 1 }}
         >
           <SegmentLabel label={option.label} index={index} progress={progress} activeColor={activeColor} />
           {option.dot ? <View className="h-[7px] w-[7px] rounded-full bg-live" /> : null}
@@ -103,7 +104,7 @@ export function SegmentedSwitcher<T extends string>({
               </Animated.Text>
             </View>
           ) : null}
-        </PressableScale>
+        </Pressable>
       ))}
     </View>
   );
@@ -133,7 +134,14 @@ function SegmentLabel({
   });
 
   return (
-    <Animated.Text numberOfLines={1} className="text-[13.5px] font-extrabold" style={style}>
+    <Animated.Text
+      numberOfLines={1}
+      allowFontScaling={false}
+      adjustsFontSizeToFit
+      minimumFontScale={0.82}
+      className="max-w-full shrink text-center text-[13px] font-extrabold leading-[16px]"
+      style={style}
+    >
       {label}
     </Animated.Text>
   );

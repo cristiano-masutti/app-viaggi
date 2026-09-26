@@ -1,8 +1,8 @@
 import { Pencil } from 'lucide-react-native';
 import React from 'react';
-import { Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { PressableScale } from './PressableScale';
+import { haptics } from '@/lib/haptics';
 
 interface CardProps {
   children: React.ReactNode;
@@ -26,15 +26,17 @@ export function Card({ children, onEdit, editLabel = 'Modifica', className, styl
       style={style}
     >
       {onEdit ? (
-        <PressableScale
-          onPress={onEdit}
-          scaleTo={0.9}
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            onEdit();
+          }}
           accessibilityLabel={editLabel}
           hitSlop={10}
           className="absolute right-3 top-3 z-10 h-8 w-8 items-center justify-center rounded-[11px] border border-ink-700 bg-ink-850"
         >
           <Pencil size={14} color="#94A3B8" strokeWidth={2} />
-        </PressableScale>
+        </Pressable>
       ) : null}
       {children}
     </View>

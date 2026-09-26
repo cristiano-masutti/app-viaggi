@@ -1,8 +1,8 @@
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { haptics } from '@/lib/haptics';
 import { Avatar } from './Avatar';
-import { PressableScale } from './PressableScale';
 
 export interface FilterChip {
   key: string;
@@ -42,13 +42,14 @@ export function FilterChipRow({ chips, value, onChange, accessibilityLabel, cont
       {chips.map((chip) => {
         const active = chip.key === value;
         return (
-          <PressableScale
+          <Pressable
             key={chip.key}
-            haptic="select"
-            scaleTo={0.94}
             accessibilityLabel={chip.label}
             accessibilityState={{ selected: active }}
-            onPress={() => onChange(chip.key)}
+            onPress={() => {
+              haptics.select();
+              onChange(chip.key);
+            }}
             className={`h-[38px] flex-row items-center gap-2 rounded-chip border px-3.5 ${
               active ? 'border-tangerine bg-tangerine' : 'border-ink-700 bg-ink-900'
             }`}
@@ -64,7 +65,7 @@ export function FilterChipRow({ chips, value, onChange, accessibilityLabel, cont
             >
               {chip.label}
             </Text>
-          </PressableScale>
+          </Pressable>
         );
       })}
     </ScrollView>

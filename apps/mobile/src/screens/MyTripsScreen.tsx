@@ -1,18 +1,17 @@
 import { FlashList } from '@shopify/flash-list';
 import { Bell } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { HeroTripCard, StandardTripCard } from '@/components/trips/TripCards';
 import { DashedPlaceholder } from '@/components/ui/DashedPlaceholder';
 import { HeaderIconButton, ScreenHeader } from '@/components/ui/ScreenHeader';
-import { SegmentedSwitcher, type SegmentOption } from '@/components/ui/SegmentedSwitcher';
 import { TripCardSkeleton } from '@/components/ui/Skeleton';
 import { useHeaderScroll } from '@/lib/useHeaderScroll';
-import { HUB_SUBTITLES, TRIP_TAB_LABELS } from '@/lib/trip';
+import { HUB_SUBTITLES } from '@/lib/trip';
 import { TAB_BAR_SPACE } from '@/navigation/FloatingTabBar';
 import type { MainTabScreenProps } from '@/navigation/types';
-import { useAppState, useProfile, useTripsByStatus } from '@/store/AppStore';
+import { useProfile, useTripsByStatus } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
 import type { Trip, TripStatus } from '@/types';
 
@@ -28,7 +27,6 @@ const BOOT_DELAY_MS = 550;
  */
 export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
   const profile = useProfile();
-  const { trips: allTrips } = useAppState();
   const [tab, setTab] = useState<TripStatus>('ongoing');
   const [headerHeight, setHeaderHeight] = useState(180);
   const [booting, setBooting] = useState(true);
@@ -40,19 +38,6 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
     const timer = setTimeout(() => setBooting(false), BOOT_DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
-
-  const tabs = useMemo<SegmentOption<TripStatus>[]>(() => {
-    const counts = {
-      ongoing: allTrips.filter((trip) => trip.status === 'ongoing').length,
-      upcoming: allTrips.filter((trip) => trip.status === 'upcoming').length,
-      past: allTrips.filter((trip) => trip.status === 'past').length,
-    };
-    return [
-      { key: 'ongoing', label: TRIP_TAB_LABELS.ongoing, dot: counts.ongoing > 0 },
-      { key: 'upcoming', label: TRIP_TAB_LABELS.upcoming, badge: counts.upcoming },
-      { key: 'past', label: TRIP_TAB_LABELS.past },
-    ];
-  }, [allTrips]);
 
   const openTrip = useCallback(
     (tripId: string) => navigation.navigate('TripDetail', { tripId }),
@@ -90,7 +75,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
           </Pressable>
         }
       >
-        <SegmentedSwitcher options={tabs} value={tab} onChange={setTab} tone="light" />
+        <TripsStatusTabs value={tab} onChange={setTab} />
       </ScreenHeader>
 
       {booting ? (
@@ -129,6 +114,53 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
           }
         />
       )}
+    </View>
+  );
+}
+
+function TripsStatusTabs({
+  value,
+  onChange,
+}: {
+  value: TripStatus;
+  onChange: (tab: TripStatus) => void;
+}) {
+  const items: Array<{ key: TripStatus; accessibilityLabel: string; label: string }> = [
+    { key: 'ongoing', accessibilityLabel: 'Viaggio in Corso', label: "Viaggio\nin Corso" },
+    { key: 'upcoming', accessibilityLabel: 'Viaggi Futuri', label: "Viaggi\nFuturi" },
+    { key: 'past', accessibilityLabel: 'Viaggi Passati', label: "Viaggi\nPassati" },
+  ];
+
+  return (
+    <View className="h-[54px] flex-row overflow-hidden rounded-control border border-ink-700 bg-ink-900">
+      {items.map((item) => {
+        const active = value === item.key;
+
+        return (
+          <Pressable
+            key={item.key}
+            accessibilityRole="tab"
+            accessibilityLabel={item.accessibilityLabel}
+            accessibilityState={{ selected: active }}
+            onPress={() => onChange(item.key)}
+            className="flex-1 items-center justify-center px-2"
+          >
+            <View
+              className="rounded-[12px] px-3 py-1.5"
+              style={active ? { backgroundColor: palette.accent } : undefined}
+            >
+              <Text
+                numberOfLines={2}
+                allowFontScaling={false}
+                className="text-center text-[12px] font-extrabold leading-[14px]"
+                style={{ color: active ? '#FFFFFF' : 'rgba(244,242,237,0.82)' }}
+              >
+                {item.label}
+              </Text>
+            </View>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

@@ -213,9 +213,9 @@ export function LoginScreen() {
                 className="mt-6 h-[62px] min-w-[260px] flex-row items-center justify-center self-center rounded-control px-10"
                 style={
                   {
-                    backgroundColor: canSubmit ? '#C5161D' : 'transparent',
+                    backgroundColor: canSubmit ? palette.accent : 'transparent',
                     borderWidth: 2,
-                    borderColor: '#C5161D',
+                    borderColor: palette.accent,
                     shadowOpacity: 0,
                     shadowRadius: 0,
                     shadowOffset: { width: 0, height: 0 },
@@ -225,10 +225,13 @@ export function LoginScreen() {
               >
                 {loading ? (
                   <View className="mr-2">
-                    <ActivityIndicator color={canSubmit ? '#FFFFFF' : '#C5161D'} />
+                    <ActivityIndicator color={canSubmit ? '#FFFFFF' : palette.accent} />
                   </View>
                 ) : null}
-                <Text className="text-[18px] font-extrabold tracking-tight" style={{ color: canSubmit ? '#F4F2ED' : '#C5161D' }}>
+                <Text
+                  className="text-[18px] font-extrabold tracking-tight"
+                  style={{ color: canSubmit ? '#F4F2ED' : palette.accent }}
+                >
                   {loading ? 'Verifica…' : 'Accedi'}
                 </Text>
               </Pressable>

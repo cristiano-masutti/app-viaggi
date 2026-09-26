@@ -1,11 +1,11 @@
 import * as Clipboard from 'expo-clipboard';
 import { Check, Copy } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
+import { haptics } from '@/lib/haptics';
 import { palette } from '@/theme/palette';
 
-import { PressableScale } from './PressableScale';
 
 interface Props {
   /** Testo che finisce negli appunti (indirizzo, codice fiscale, link di invito…). */
@@ -40,11 +40,10 @@ export function CopyChip({ value, label = 'Copia', className }: Props) {
   }, [value]);
 
   return (
-    <PressableScale
-      haptic="confirm"
-      scaleTo={0.93}
+    <Pressable
       accessibilityLabel={`Copia ${value}`}
       onPress={() => {
+        haptics.confirm();
         void copy();
       }}
       className={`h-10 flex-row items-center gap-1.5 rounded-[13px] border px-3.5 ${
@@ -59,6 +58,6 @@ export function CopyChip({ value, label = 'Copia', className }: Props) {
       <Text className={`text-[12.5px] font-extrabold ${copied ? 'text-success' : 'text-bone'}`}>
         {copied ? 'Copiato' : label}
       </Text>
-    </PressableScale>
+    </Pressable>
   );
 }

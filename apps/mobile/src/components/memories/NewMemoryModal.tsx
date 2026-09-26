@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -16,7 +17,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui/Buttons';
 import { FilterChipRow } from '@/components/ui/FilterChipRow';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { haptics } from '@/lib/haptics';
 import { palette } from '@/theme/palette';
@@ -89,14 +89,16 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
   return (
     <FullScreenSheet visible={visible} onClose={onClose}>
       <View className="flex-row items-center gap-3 px-[18px] pb-3 pt-1">
-        <PressableScale
-          onPress={onClose}
-          scaleTo={0.9}
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            onClose();
+          }}
           accessibilityLabel="Chiudi"
           className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-ink-700 bg-ink-900"
         >
           <X size={18} color={palette.text} strokeWidth={2.2} />
-        </PressableScale>
+        </Pressable>
         <Text className="flex-1 text-[19px] font-extrabold tracking-tight text-bone">Nuovo Ricordo</Text>
       </View>
 
@@ -131,7 +133,10 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
                     strokeWidth={2}
                   />
                 }
-                onPress={() => setFormat('media')}
+                onPress={() => {
+                  haptics.select();
+                  setFormat('media');
+                }}
               />
               <FormatCard
                 active={format === 'note'}
@@ -143,18 +148,20 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
                     strokeWidth={2}
                   />
                 }
-                onPress={() => setFormat('note')}
+                onPress={() => {
+                  haptics.select();
+                  setFormat('note');
+                }}
               />
             </View>
           </View>
 
           {format === 'media' ? (
             <Animated.View entering={FadeIn.duration(180)} className="gap-3">
-              <PressableScale
+              <Pressable
                 onPress={() => {
                   void pickMedia();
                 }}
-                scaleTo={0.985}
                 accessibilityLabel="Carica dalla galleria"
                 className="h-[200px] items-center justify-center gap-2.5 overflow-hidden rounded-card border border-dashed border-tangerine/55 bg-tangerine/10"
               >
@@ -171,7 +178,7 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
                     </Text>
                   </>
                 )}
-              </PressableScale>
+              </Pressable>
 
               <View className="rounded-control border border-ink-700 bg-ink-900 px-4 py-3.5">
                 <TextInput
@@ -229,7 +236,10 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
                     strokeWidth={2.2}
                   />
                 }
-                onPress={() => setVisibility('crew')}
+                onPress={() => {
+                  haptics.select();
+                  setVisibility('crew');
+                }}
               />
               <VisibilityOption
                 active={visibility === 'private'}
@@ -241,7 +251,10 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
                     strokeWidth={2.2}
                   />
                 }
-                onPress={() => setVisibility('private')}
+                onPress={() => {
+                  haptics.select();
+                  setVisibility('private');
+                }}
               />
             </View>
             <Text className="text-[11.5px] font-semibold leading-[17px] text-mist">
@@ -297,9 +310,7 @@ function FormatCard({
   onPress: () => void;
 }) {
   return (
-    <PressableScale
-      haptic="select"
-      scaleTo={0.96}
+    <Pressable
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
       onPress={onPress}
@@ -311,7 +322,7 @@ function FormatCard({
       <Text className={`text-[13.5px] font-extrabold ${active ? 'text-tangerine-soft' : 'text-bone/70'}`}>
         {label}
       </Text>
-    </PressableScale>
+    </Pressable>
   );
 }
 
@@ -327,9 +338,7 @@ function VisibilityOption({
   onPress: () => void;
 }) {
   return (
-    <PressableScale
-      haptic="select"
-      scaleTo={0.97}
+    <Pressable
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
       onPress={onPress}
@@ -344,7 +353,7 @@ function VisibilityOption({
       >
         {label}
       </Text>
-    </PressableScale>
+    </Pressable>
   );
 }
 

@@ -1,10 +1,10 @@
 import { ChevronRight, Phone } from 'lucide-react-native';
 import React from 'react';
-import { ActivityIndicator, Linking, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 
+import { haptics } from '@/lib/haptics';
 import { palette, shadow } from '@/theme/palette';
 
-import { PressableScale } from './PressableScale';
 
 /* ── Azione primaria ─────────────────────────────────────────────────── */
 
@@ -34,11 +34,13 @@ export function PrimaryButton({
   const inactive = disabled || loading;
 
   return (
-    <PressableScale
-      onPress={onPress}
+    <Pressable
+      onPress={() => {
+        if (haptic === 'confirm') haptics.confirm();
+        else haptics.tap();
+        onPress();
+      }}
       disabled={inactive}
-      haptic={haptic}
-      scaleTo={0.975}
       accessibilityLabel={label}
       className={`h-[56px] flex-row items-center justify-center gap-2.5 rounded-control ${
         inactive ? 'bg-ink-700' : 'bg-tangerine'
@@ -59,7 +61,7 @@ export function PrimaryButton({
           </Text>
         </>
       )}
-    </PressableScale>
+    </Pressable>
   );
 }
 
@@ -85,10 +87,12 @@ export function GhostButton({
 }: GhostButtonProps) {
   const danger = tone === 'danger';
   return (
-    <PressableScale
-      onPress={onPress}
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
       disabled={disabled}
-      scaleTo={0.97}
       accessibilityLabel={label}
       className={`h-[48px] flex-row items-center justify-center gap-2 rounded-[15px] border ${
         danger ? 'border-danger/25 bg-danger/10' : 'border-ink-700 bg-ink-850'
@@ -98,7 +102,7 @@ export function GhostButton({
       <Text className={`text-[14px] font-extrabold tracking-tight ${danger ? 'text-danger' : 'text-bone'}`}>
         {label}
       </Text>
-    </PressableScale>
+    </Pressable>
   );
 }
 
@@ -126,9 +130,11 @@ interface DocButtonProps {
  */
 export function DocButton({ label, icon, onPress, empty = false, status }: DocButtonProps) {
   return (
-    <PressableScale
-      onPress={onPress}
-      scaleTo={0.98}
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
       accessibilityLabel={label}
       className={`h-[46px] w-full flex-row items-center gap-2.5 rounded-[15px] border px-4 ${
         empty ? 'border-dashed border-ink-700 bg-ink-900' : 'border-ink-700 bg-ink-850'
@@ -145,7 +151,7 @@ export function DocButton({ label, icon, onPress, empty = false, status }: DocBu
       </Text>
       {status}
       <ChevronRight size={16} color="rgba(244,242,237,0.35)" strokeWidth={2.2} />
-    </PressableScale>
+    </Pressable>
   );
 }
 
@@ -162,11 +168,10 @@ export function CallButton({
   className?: string;
 }) {
   return (
-    <PressableScale
-      haptic="confirm"
-      scaleTo={0.97}
+    <Pressable
       accessibilityLabel={`${label}, ${phone}`}
       onPress={() => {
+        haptics.confirm();
         void Linking.openURL(`tel:${phone}`);
       }}
       className={`h-[50px] flex-row items-center justify-center gap-2 rounded-[15px] bg-tangerine ${
@@ -177,7 +182,7 @@ export function CallButton({
       <Text numberOfLines={1} className="text-[14.5px] font-extrabold tracking-tight text-white">
         {label}
       </Text>
-    </PressableScale>
+    </Pressable>
   );
 }
 
@@ -194,9 +199,11 @@ export function SoftActionButton({
   className?: string;
 }) {
   return (
-    <PressableScale
-      onPress={onPress}
-      scaleTo={0.97}
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
       accessibilityLabel={label}
       className={`h-[50px] flex-row items-center justify-center gap-2 rounded-[15px] border border-ink-700 bg-ink-850 ${
         className ?? ''
@@ -206,7 +213,7 @@ export function SoftActionButton({
       <Text numberOfLines={1} className="text-[13.5px] font-extrabold tracking-tight text-bone">
         {label}
       </Text>
-    </PressableScale>
+    </Pressable>
   );
 }
 

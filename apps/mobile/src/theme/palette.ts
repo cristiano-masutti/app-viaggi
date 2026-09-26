@@ -17,7 +17,7 @@ export const palette = {
   /** #262633 — bordo di tutto e base dello skeleton shimmer. */
   border: tokens.ink[700],
 
-  /** #FF5B22 — Electric Tangerine, un solo accento in tutta l'app. */
+  /** #C5161D — Rosso "Accedi", un solo accento in tutta l'app. */
   accent: tokens.tangerine.DEFAULT,
   accentSoft: tokens.tangerine.soft,
   accentTint: tokens.tangerine.tint,

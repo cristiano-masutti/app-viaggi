@@ -1,9 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Lock, Play } from 'lucide-react-native';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { PressableScale } from '@/components/ui/PressableScale';
+import { haptics } from '@/lib/haptics';
 import { SmartImage } from '@/components/ui/SmartImage';
 import type { CrewMember, PhotoMemory, ReactionKey } from '@/types';
 
@@ -28,11 +28,17 @@ export function PhotoTile({ memory, author, onPress, onQuickReact }: Props) {
   const totalReactions = Object.values(memory.reactions).reduce((sum, count) => sum + (count ?? 0), 0);
 
   return (
-    <PressableScale
-      onPress={onPress}
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
       // Long press = 🔥, la reazione più usata: un gesto, zero navigazione.
-      onLongPress={() => onQuickReact(REACTIONS[0])}
-      scaleTo={0.965}
+      onLongPress={() => {
+        haptics.select();
+        onQuickReact(REACTIONS[0]);
+      }}
+      delayLongPress={320}
       accessibilityLabel={`Ricordo di ${author?.name ?? 'crew'}, ${memory.time}`}
       style={{ aspectRatio: memory.aspectRatio }}
       className="w-full overflow-hidden rounded-[18px] border border-ink-700 bg-ink-800"
@@ -82,6 +88,6 @@ export function PhotoTile({ memory, author, onPress, onQuickReact }: Props) {
           </View>
         ) : null}
       </View>
-    </PressableScale>
+    </Pressable>
   );
 }

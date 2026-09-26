@@ -1,8 +1,8 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
-import { PressableScale } from '@/components/ui/PressableScale';
+import { haptics } from '@/lib/haptics';
 import type { PhotoMemory, ReactionKey } from '@/types';
 
 /** Le quattro reazioni disponibili. Poche e fisse: non è una tastiera emoji. */
@@ -31,13 +31,14 @@ export function ReactionBar({ memory, onToggle, variant = 'full' }: Props) {
         const mine = memory.myReaction === reaction;
 
         return (
-          <PressableScale
+          <Pressable
             key={reaction}
-            haptic="select"
-            scaleTo={0.88}
             accessibilityLabel={`Reagisci con ${reaction}`}
             accessibilityState={{ selected: mine }}
-            onPress={() => onToggle(reaction)}
+            onPress={() => {
+              haptics.select();
+              onToggle(reaction);
+            }}
             className={`flex-row items-center gap-1 rounded-chip border ${
               compact ? 'px-2 py-1' : 'px-3 py-2'
             } ${mine ? 'border-tangerine bg-tangerine/20' : 'border-ink-700 bg-ink-900/85'}`}
@@ -53,7 +54,7 @@ export function ReactionBar({ memory, onToggle, variant = 'full' }: Props) {
                 {count}
               </Animated.Text>
             ) : null}
-          </PressableScale>
+          </Pressable>
         );
       })}
     </View>

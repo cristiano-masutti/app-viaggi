@@ -76,12 +76,17 @@ export function ScreenHeader({
         <View className="flex-1">
           <Text
             numberOfLines={1}
+            allowFontScaling={false}
             className={`font-extrabold tracking-tight text-bone ${compact ? 'text-[19px]' : 'text-[25px]'}`}
           >
             {title}
           </Text>
           {subtitle ? (
-            <Text numberOfLines={1} className="mt-[3px] text-[13px] font-semibold text-mist">
+            <Text
+              numberOfLines={1}
+              allowFontScaling={false}
+              className="mt-[3px] text-[13px] font-semibold text-mist"
+            >
               {subtitle}
             </Text>
           ) : null}

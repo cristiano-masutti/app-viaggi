@@ -1,8 +1,8 @@
 import { Lock, Pencil, Trash2 } from 'lucide-react-native';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { PressableScale } from '@/components/ui/PressableScale';
+import { haptics } from '@/lib/haptics';
 import type { CrewMember, NoteMemory } from '@/types';
 
 interface Props {
@@ -44,28 +44,31 @@ export function NoteCard({ note, author, dayLabel, mine, onEdit, onDelete }: Pro
         </View>
 
         {mine && onEdit ? (
-          <PressableScale
-            onPress={onEdit}
-            scaleTo={0.88}
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              onEdit();
+            }}
             hitSlop={8}
             accessibilityLabel="Modifica nota"
             className="h-7 w-7 items-center justify-center rounded-full border border-cream-ink/15"
           >
             <Pencil size={13} color="#A8A29E" strokeWidth={2.2} />
-          </PressableScale>
+          </Pressable>
         ) : null}
 
         {mine && onDelete ? (
-          <PressableScale
-            onPress={onDelete}
-            haptic="warn"
-            scaleTo={0.88}
+          <Pressable
+            onPress={() => {
+              haptics.warn();
+              onDelete();
+            }}
             hitSlop={8}
             accessibilityLabel="Elimina nota"
             className="h-7 w-7 items-center justify-center rounded-full border border-cream-ink/15"
           >
             <Trash2 size={13} color="#A8A29E" strokeWidth={2.2} />
-          </PressableScale>
+          </Pressable>
         ) : null}
       </View>
 

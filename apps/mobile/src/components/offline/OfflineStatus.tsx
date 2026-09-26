@@ -1,9 +1,9 @@
 import { CloudOff, HardDriveDownload, RefreshCw, ShieldCheck } from 'lucide-react-native';
 import React, { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { PressableScale } from '@/components/ui/PressableScale';
+import { haptics } from '@/lib/haptics';
 import { formatBytes } from '@/lib/offlineDocuments';
 import { useOfflineDocument, useTripOfflineStatus } from '@/store/OfflineLibrary';
 import { slideSpring } from '@/theme/motion';
@@ -96,15 +96,17 @@ export function TripOfflineStrip({ trip }: { trip: Trip }) {
         </View>
 
         {failed ? (
-          <PressableScale
-            onPress={status.retryFailed}
-            scaleTo={0.92}
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              status.retryFailed();
+            }}
             accessibilityLabel="Riprova il salvataggio offline"
             className="h-9 flex-row items-center gap-1.5 rounded-xl border border-ink-700 bg-ink-850 px-3"
           >
             <RefreshCw size={13} color={palette.text} strokeWidth={2.2} />
             <Text className="text-[12px] font-extrabold text-bone">Riprova</Text>
-          </PressableScale>
+          </Pressable>
         ) : null}
       </View>
 

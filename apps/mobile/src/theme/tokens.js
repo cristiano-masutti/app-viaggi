@@ -16,11 +16,11 @@ module.exports = {
     700: '#262633', // bordi, divider e base dello skeleton shimmer
   },
 
-  /** Accento primario: Electric Tangerine. */
+  /** Accento primario: rosso "Accedi". */
   tangerine: {
-    DEFAULT: '#FF5B22',
-    soft: '#FF9A6B', // testo/icone accento su fondo scuro
-    tint: '#FFB59A', // etichette dentro badge accesi
+    DEFAULT: '#C5161D',
+    soft: '#E35D62', // testo/icone accento su fondo scuro
+    tint: '#F2A0A4', // etichette dentro badge accesi
   },
 
   /** Note del diario: Vintage Cream Warm. */

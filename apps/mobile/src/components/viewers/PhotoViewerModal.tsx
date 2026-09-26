@@ -1,10 +1,10 @@
 import { Lock, Trash2, X } from 'lucide-react-native';
 import React from 'react';
-import { Modal, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ReactionBar } from '@/components/memories/ReactionBar';
-import { PressableScale } from '@/components/ui/PressableScale';
+import { haptics } from '@/lib/haptics';
 import { palette } from '@/theme/palette';
 import type { CrewMember, PhotoMemory, ReactionKey } from '@/types';
 
@@ -44,14 +44,16 @@ export function PhotoViewerModal({
           {memory ? (
             <>
               <View className="z-10 flex-row items-center gap-3 px-[18px] pb-3 pt-2">
-                <PressableScale
-                  onPress={onClose}
-                  scaleTo={0.9}
+                <Pressable
+                  onPress={() => {
+                    haptics.tap();
+                    onClose();
+                  }}
                   accessibilityLabel="Chiudi foto"
                   className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-white/15 bg-white/10"
                 >
                   <X size={18} color="#FFFFFF" strokeWidth={2.2} />
-                </PressableScale>
+                </Pressable>
 
                 <View className="flex-1 gap-0.5">
                   <Text numberOfLines={1} className="text-[15px] font-extrabold tracking-tight text-white">
@@ -88,15 +90,16 @@ export function PhotoViewerModal({
                 <View className="flex-row items-center justify-between gap-3">
                   <ReactionBar memory={memory} onToggle={onToggleReaction} />
                   {canDelete && onDelete ? (
-                    <PressableScale
-                      haptic="warn"
-                      scaleTo={0.9}
+                    <Pressable
                       accessibilityLabel="Elimina ricordo"
-                      onPress={onDelete}
+                      onPress={() => {
+                        haptics.warn();
+                        onDelete();
+                      }}
                       className="h-10 w-10 items-center justify-center rounded-[13px] border border-danger/30 bg-danger/15"
                     >
                       <Trash2 size={16} color={palette.danger} strokeWidth={2} />
-                    </PressableScale>
+                    </Pressable>
                   ) : null}
                 </View>
               </View>

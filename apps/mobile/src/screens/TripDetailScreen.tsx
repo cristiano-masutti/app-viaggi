@@ -49,9 +49,8 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
   const [editingNote, setEditingNote] = useState<NoteMemory | null>(null);
   const [newMemoryOpen, setNewMemoryOpen] = useState(false);
 
-  // Uno scroll handler per tab: ognuna ha la sua posizione, l'header segue quella attiva.
-  const memoriesScroll = useHeaderScroll();
-  const organizeScroll = useHeaderScroll();
+  // Un solo handler condiviso: in ogni momento è montata una sola tab scrollabile.
+  const activeScroll = useHeaderScroll();
 
   /** La foto nel visore si rilegge dallo store a ogni render: le reazioni restano vive. */
   const viewerPhoto = useMemo(
@@ -250,7 +249,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
           currentUserId={profile.id}
           topPadding={headerHeight}
           bottomPadding={bottomPadding}
-          scrollComponent={memoriesScroll.scrollComponent}
+          scrollComponent={activeScroll.scrollComponent}
           onNewMemory={() => setNewMemoryOpen(true)}
           onOpenPhoto={(memory) => setViewerPhotoId(memory.id)}
           onReact={react}
@@ -262,7 +261,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
           trip={trip}
           topPadding={headerHeight}
           bottomPadding={bottomPadding}
-          scrollRef={organizeScroll.scrollRef}
+          scrollRef={activeScroll.scrollRef}
           onEdit={setEditing}
           onOpenDoc={setViewerDoc}
         />

@@ -1,12 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight } from 'lucide-react-native';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Avatar, AvatarStack } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { SmartImage } from '@/components/ui/SmartImage';
+import { haptics } from '@/lib/haptics';
 import { crewLabel, tripBadge, tripMeta } from '@/lib/trip';
 import { shadow } from '@/theme/palette';
 import type { Trip } from '@/types';
@@ -55,9 +55,11 @@ function Cover({ trip, height, children }: { trip: Trip; height: number; childre
  */
 export function HeroTripCard({ trip, onPress }: CardProps) {
   return (
-    <PressableScale
-      onPress={onPress}
-      scaleTo={0.985}
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
       accessibilityLabel={`Entra nel viaggio ${trip.title}`}
       className="overflow-hidden rounded-hero border border-ink-700 bg-ink-900"
       style={shadow.card}
@@ -85,7 +87,7 @@ export function HeroTripCard({ trip, onPress }: CardProps) {
           <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.6} />
         </View>
       </View>
-    </PressableScale>
+    </Pressable>
   );
 }
 
@@ -100,9 +102,11 @@ export function StandardTripCard({ trip, onPress }: CardProps) {
   const upcoming = trip.status === 'upcoming';
 
   return (
-    <PressableScale
-      onPress={onPress}
-      scaleTo={0.985}
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
       accessibilityLabel={`Apri il viaggio ${trip.title}`}
       className="overflow-hidden rounded-card border border-ink-700 bg-ink-900"
     >
@@ -136,6 +140,6 @@ export function StandardTripCard({ trip, onPress }: CardProps) {
           <ArrowRight size={16} color="rgba(244,242,237,0.35)" strokeWidth={2.2} />
         </View>
       </View>
-    </PressableScale>
+    </Pressable>
   );
 }

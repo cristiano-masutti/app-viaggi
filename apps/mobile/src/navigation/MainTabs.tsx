@@ -24,7 +24,6 @@ export function MainTabs() {
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        // La barra è flottante: le schermate scorrono per intero sotto di essa.
         sceneStyle: { backgroundColor: 'transparent' },
       }}
     >
@@ -34,8 +33,7 @@ export function MainTabs() {
       {/*
         TODO — Tab "Esplora" (catalogo dei viaggi aperti):
         <Tab.Screen name="Explore" component={ExploreScreen} options={{ title: 'Esplora' }} />
-        Aggiungere la voce in `MainTabParamList`, l'icona in `FloatingTabBar.ICONS`
-        e l'etichetta in `FloatingTabBar.LABELS`: il resto della barra si adatta da sé.
+        Aggiungere la voce in `MainTabParamList` e aggiornare la barra custom.
       */}
     </Tab.Navigator>
   );

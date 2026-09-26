@@ -8,10 +8,10 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import { Check, FileText, Paperclip, Trash2, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { GhostButton, PrimaryButton } from '@/components/ui/Buttons';
-import { PressableScale } from '@/components/ui/PressableScale';
+import { haptics } from '@/lib/haptics';
 import { createId } from '@/lib/id';
 import { SHEET_SNAP_POINTS } from '@/theme/motion';
 import { palette } from '@/theme/palette';
@@ -138,14 +138,16 @@ export function EditSheet({
           <Text className="text-[20px] font-extrabold tracking-tight text-white">{title}</Text>
           {subtitle ? <Text className="text-[12.5px] font-semibold text-mist">{subtitle}</Text> : null}
         </View>
-        <PressableScale
-          onPress={onClose}
-          scaleTo={0.9}
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            onClose();
+          }}
           accessibilityLabel="Chiudi"
           className="h-[38px] w-[38px] items-center justify-center rounded-[13px] border border-ink-700 bg-ink-850"
         >
           <X size={17} color={palette.text} strokeWidth={2.1} />
-        </PressableScale>
+        </Pressable>
       </View>
 
       <BottomSheetScrollView
@@ -189,15 +191,16 @@ export function EditSheet({
                 <Text numberOfLines={1} className="flex-1 text-[13.5px] font-bold text-bone">
                   {doc.subtitle}
                 </Text>
-                <PressableScale
-                  haptic="warn"
-                  scaleTo={0.9}
+                <Pressable
                   accessibilityLabel="Rimuovi allegato"
-                  onPress={() => setDoc(null)}
+                  onPress={() => {
+                    haptics.warn();
+                    setDoc(null);
+                  }}
                   className="h-9 w-9 items-center justify-center rounded-xl border border-ink-700 bg-ink-900"
                 >
                   <Trash2 size={14} color={palette.danger} strokeWidth={2} />
-                </PressableScale>
+                </Pressable>
               </View>
             ) : null}
             <GhostButton

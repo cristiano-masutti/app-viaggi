@@ -1,13 +1,13 @@
 import { CloudOff, FileText, HardDriveDownload, Share2, ShieldCheck, X } from 'lucide-react-native';
 import React from 'react';
-import { Modal, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GhostButton } from '@/components/ui/Buttons';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useToast } from '@/components/ui/Toast';
+import { haptics } from '@/lib/haptics';
 import { formatBytes } from '@/lib/offlineDocuments';
 import { useDocumentSource } from '@/store/OfflineLibrary';
 import { palette } from '@/theme/palette';
@@ -41,14 +41,16 @@ export function DocumentViewerModal({ doc, onClose }: Props) {
         {doc ? (
           <>
             <View className="flex-row items-center gap-3 px-[18px] pb-4 pt-2">
-              <PressableScale
-                onPress={onClose}
-                scaleTo={0.9}
+              <Pressable
+                onPress={() => {
+                  haptics.tap();
+                  onClose();
+                }}
                 accessibilityLabel="Chiudi documento"
                 className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-ink-700 bg-ink-900"
               >
                 <X size={18} color={palette.text} strokeWidth={2.2} />
-              </PressableScale>
+              </Pressable>
               <View className="flex-1 gap-0.5">
                 <Text numberOfLines={1} className="text-[17px] font-extrabold tracking-tight text-bone">
                   {doc.title}
