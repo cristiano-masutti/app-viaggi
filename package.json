@@ -4,6 +4,16 @@
   "description": "Prototipo frontend mobile Vibemakers Travel — React Native + Expo + NativeWind",
   "main": "index.ts",
   "private": true,
+  "engines": {
+    "node": "^22.13.0 || >=24.3.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^22.13.0 || >=24.3.0",
+      "onFail": "error"
+    }
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
