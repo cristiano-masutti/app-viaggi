@@ -1,9 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import { Compass, Eye, EyeOff, Fingerprint, Lock, User } from 'lucide-react-native';
+import { Eye, EyeOff, Fingerprint, Lock, User } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,13 +16,14 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PrimaryButton } from '@/components/ui/Buttons';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { SmartImage } from '@/components/ui/SmartImage';
 import { useAppActions } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
 
 /** Chiave della sessione salvata: la sua presenza abilita lo Sblocco Rapido. */
 const SESSION_KEY = 'vibemakers.session';
+const LOGIN_HERO_IMAGE = require('../../assets/login-hero.png');
 
 /**
  * Login essenziale.
@@ -105,26 +107,43 @@ export function LoginScreen() {
 
   return (
     <View className="flex-1 bg-ink-950">
-      {/* Alone arancione in alto: l'unico tocco di colore prima del bottone. */}
       <LinearGradient
         colors={['rgba(255,91,34,0.20)', 'rgba(255,91,34,0.04)', 'transparent']}
-        style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 360 }}
+        style={{ position: 'absolute', left: 0, right: 0, top: -30, height: 390 }}
       />
+      <View className="pointer-events-none absolute left-0 right-0 top-0 h-[440px] overflow-hidden">
+        <SmartImage
+          source={LOGIN_HERO_IMAGE}
+          tone="ink"
+          contentFit="cover"
+          contentPosition="top center"
+          className="h-full w-full opacity-65"
+          accessibilityLabel="Foto di viaggio"
+        />
+        <LinearGradient
+          colors={[
+            'rgba(11,15,25,0)',
+            'rgba(11,15,25,0.35)',
+            'rgba(11,15,25,0.74)',
+            'rgba(11,15,25,0.94)',
+            'rgba(11,15,25,1)',
+          ]}
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+        />
+      </View>
 
       <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
         <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView
-            contentContainerClassName="flex-grow px-6 pb-8 pt-12"
+            contentContainerClassName="flex-grow px-6 pb-9 pt-0"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             <Animated.View entering={FadeInDown.duration(380)}>
-              <View className="h-14 w-14 items-center justify-center rounded-[18px] border border-ink-700 bg-ink-900">
-                <Compass size={26} color={palette.accent} strokeWidth={1.8} />
-              </View>
-              <Text className="mt-6 text-[36px] font-extrabold tracking-tight text-bone">Accedi</Text>
+              <View className="h-[250px]" />
+              <Text className="text-[36px] font-extrabold tracking-tight text-bone">Accedi</Text>
               <Text className="mt-2 max-w-[30ch] text-[15px] leading-6 text-mist">
-                Usa le credenziali che ti ha dato l'organizzazione.
+                Inserisci le tue credenziali per continuare
               </Text>
             </Animated.View>
 
@@ -177,15 +196,38 @@ export function LoginScreen() {
 
               {error ? <Text className="px-1 text-[13px] font-bold text-tangerine-soft">{error}</Text> : null}
 
-              <PrimaryButton
-                label="Accedi"
-                className="mt-2"
-                disabled={!canSubmit}
-                loading={loading}
+              <PressableScale
                 onPress={() => {
                   void handleSignIn();
                 }}
-              />
+                disabled={!canSubmit || loading}
+                haptic="confirm"
+                scaleTo={0.975}
+                accessibilityLabel="Accedi"
+                className={`mt-2 h-[58px] flex-row items-center justify-center rounded-control ${
+                  canSubmit ? 'bg-tangerine' : 'bg-white/10'
+                }`}
+                style={
+                  canSubmit
+                    ? {
+                        shadowColor: palette.accent,
+                        shadowOpacity: 0.3,
+                        shadowRadius: 18,
+                        shadowOffset: { width: 0, height: 10 },
+                        elevation: 9,
+                      }
+                    : undefined
+                }
+              >
+                {loading ? (
+                  <View className="mr-2">
+                    <ActivityIndicator color="#0B0F19" />
+                  </View>
+                ) : null}
+                <Text className={`text-[17px] font-extrabold tracking-tight ${canSubmit ? 'text-ink-950' : 'text-bone/45'}`}>
+                  {loading ? 'Verifica…' : 'Accedi'}
+                </Text>
+              </PressableScale>
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(140).duration(380)} className="mt-7 gap-3">
@@ -208,17 +250,11 @@ export function LoginScreen() {
                 <Fingerprint size={22} color={palette.accent} strokeWidth={1.9} />
                 <Text className="text-[16px] font-extrabold tracking-tight text-bone">Sblocco Rapido</Text>
               </PressableScale>
-
-              {!quickUnlockAvailable ? (
-                <Text className="text-center text-[12px] font-semibold text-mist">
-                  Disponibile dopo il primo accesso con le credenziali.
-                </Text>
-              ) : null}
             </Animated.View>
 
             <View className="mt-auto items-center pt-10">
               <Text className="text-[13px] font-semibold text-bone/40">
-                Problemi con le credenziali? Scrivi al coordinatore.
+                Problemi con le credenziali? Contatta il coordinatore
               </Text>
             </View>
           </ScrollView>
@@ -244,9 +280,9 @@ const Field = React.forwardRef<TextInputRef, FieldProps>(function Field(
 
   return (
     <View
-      className={`h-[60px] flex-row items-center gap-3 rounded-control border bg-ink-900 pl-4 ${
+      className={`h-[60px] flex-row items-center gap-3 rounded-control border border-white/10 bg-white/5 pl-4 ${
         trailing ? 'pr-2' : 'pr-4'
-      } ${focused ? 'border-tangerine' : 'border-ink-700'}`}
+      } ${focused ? 'border-tangerine' : ''}`}
     >
       {icon}
       <TextInput

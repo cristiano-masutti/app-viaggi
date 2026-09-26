@@ -19,7 +19,8 @@
       "bundleIdentifier": "travel.vibemakers.app",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Sblocca rapidamente l'app senza reinserire le credenziali.",
-        "NSPhotoLibraryUsageDescription": "Serve per scegliere la copertina del viaggio e caricare i ricordi della crew."
+        "NSPhotoLibraryUsageDescription": "Serve per scegliere la copertina del viaggio e caricare i ricordi della crew.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

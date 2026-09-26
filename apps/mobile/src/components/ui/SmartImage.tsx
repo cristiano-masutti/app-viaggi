@@ -7,6 +7,8 @@ import { IMAGE_TRANSITION_MS } from '@/theme/motion';
 export interface SmartImageProps extends Omit<ImageProps, 'placeholder' | 'source'> {
   /** URI remoto o locale. `undefined` lascia a vista il solo blurhash. */
   uri?: string;
+  /** Source statico (es. `require(...)`) quando l'immagine è locale al bundle. */
+  source?: ImageProps['source'];
   /** Blurhash specifico della foto (arriva dal dato). */
   blurhash?: string;
   /** Tinta di ripiego quando la foto non porta con sé un blurhash. */
@@ -28,6 +30,7 @@ export interface SmartImageProps extends Omit<ImageProps, 'placeholder' | 'sourc
  */
 export function SmartImage({
   uri,
+  source,
   blurhash,
   tone = 'ink',
   contentFit = 'cover',
@@ -36,7 +39,7 @@ export function SmartImage({
 }: SmartImageProps) {
   return (
     <Image
-      source={uri ? { uri } : undefined}
+      source={source ?? (uri ? { uri } : undefined)}
       placeholder={{ blurhash: blurhash ?? blurhashes[tone] }}
       placeholderContentFit="cover"
       cachePolicy="memory-disk"
