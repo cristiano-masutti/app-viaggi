@@ -36,6 +36,17 @@ Ogni versione di Node porta il suo npm (Node 24 → npm 11): non serve
 `npm i -g npm`. Dopo un cambio di versione maggiore conviene ripartire puliti
 con `npm ci`.
 
+### `overrides` in package.json
+
+`xcode` (usato da `@expo/config-plugins` per il prebuild iOS) dipende ancora da
+`uuid@7`, deprecato e colpito da
+[GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq): da solo
+generava tutti i 10 avvisi di `npm audit`. L'override forza `uuid@^11.1.1` solo
+sotto `xcode`, che ne usa unicamente `v4()`, ancora esportato in CommonJS.
+Verificato con `npx expo prebuild --platform ios`. Quando Expo aggiornerà
+`xcode` l'override si può togliere. **Mai `npm audit fix --force`**: per
+"risolvere" riporterebbe Expo alla 46.
+
 ---
 
 ## Le regole che tengono insieme il progetto
