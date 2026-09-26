@@ -1,11 +1,10 @@
 import { FlashList } from '@shopify/flash-list';
 import { Bell } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { HeroTripCard, StandardTripCard } from '@/components/trips/TripCards';
 import { DashedPlaceholder } from '@/components/ui/DashedPlaceholder';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { HeaderIconButton, ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SegmentedSwitcher, type SegmentOption } from '@/components/ui/SegmentedSwitcher';
 import { TripCardSkeleton } from '@/components/ui/Skeleton';
@@ -78,9 +77,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
         scrollY={scrollY}
         onHeight={setHeaderHeight}
         right={
-          <PressableScale
-            haptic="tap"
-            scaleTo={0.9}
+          <Pressable
             accessibilityLabel="Notifiche"
             onPress={() => {
               /* TODO: centro notifiche */
@@ -90,7 +87,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
               <Bell size={19} color={palette.text} strokeWidth={1.9} />
               <View className="absolute right-[11px] top-[10px] h-2 w-2 rounded-full border-[1.5px] border-ink-900 bg-tangerine" />
             </HeaderIconButton>
-          </PressableScale>
+          </Pressable>
         }
       >
         <SegmentedSwitcher options={tabs} value={tab} onChange={setTab} tone="light" />

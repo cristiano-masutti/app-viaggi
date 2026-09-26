@@ -1,14 +1,13 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, Fingerprint, IdCard, LogOut, Pencil, Salad, Stethoscope } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { Alert, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { OfflineBadge } from '@/components/offline/OfflineStatus';
 import { GhostButton } from '@/components/ui/Buttons';
 import { Card, SectionLabel } from '@/components/ui/Card';
 import { CopyChip } from '@/components/ui/CopyChip';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useToast } from '@/components/ui/Toast';
 import { ImageZoomModal } from '@/components/viewers/ImageZoomModal';
@@ -74,8 +73,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
               tone="portrait"
               style={{ width: 104, height: 104, borderRadius: 52 }}
             />
-            <PressableScale
-              scaleTo={0.9}
+            <Pressable
               accessibilityLabel="Cambia foto profilo"
               onPress={() => {
                 void pickImage((uri) => {
@@ -86,7 +84,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
               className="absolute -bottom-0.5 -right-0.5 h-9 w-9 items-center justify-center rounded-full border-[3px] border-ink-950 bg-tangerine"
             >
               <Camera size={16} color="#FFFFFF" strokeWidth={2} />
-            </PressableScale>
+            </Pressable>
           </View>
 
           <View className="items-center gap-1">
@@ -128,9 +126,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                       setEditingBio(false);
                     }}
                   />
-                  <PressableScale
-                    haptic="confirm"
-                    scaleTo={0.97}
+                  <Pressable
                     accessibilityLabel="Salva bio"
                     onPress={() => {
                       patchProfile({ bio: bioDraft.trim() });
@@ -140,7 +136,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                     className="h-[48px] flex-1 items-center justify-center rounded-[15px] bg-tangerine"
                   >
                     <Text className="text-[14px] font-extrabold tracking-tight text-white">Salva</Text>
-                  </PressableScale>
+                  </Pressable>
                 </View>
               </>
             ) : (

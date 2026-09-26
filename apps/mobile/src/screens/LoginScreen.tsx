@@ -1,12 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import { Eye, EyeOff, Fingerprint, Lock, User } from 'lucide-react-native';
+import { Eye, EyeOff, Lock, User } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -16,7 +17,6 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PressableScale } from '@/components/ui/PressableScale';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useAppActions } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
@@ -84,8 +84,17 @@ export function LoginScreen() {
   }, []);
 
   const handleSignIn = useCallback(async () => {
-    if (!username.trim() || !password) {
-      setError('Inserisci nome utente e password.');
+    const missingUsername = username.trim().length === 0;
+    const missingPassword = password.length === 0;
+
+    if (missingUsername || missingPassword) {
+      if (missingUsername && missingPassword) {
+        setError('Mancano nome utente e password.');
+      } else if (missingUsername) {
+        setError('Manca il nome utente.');
+      } else {
+        setError('Manca la password.');
+      }
       return;
     }
 
@@ -117,17 +126,18 @@ export function LoginScreen() {
           tone="ink"
           contentFit="cover"
           contentPosition="top center"
-          className="h-full w-full opacity-65"
+          className="h-full w-full opacity-80"
           accessibilityLabel="Foto di viaggio"
         />
         <LinearGradient
           colors={[
             'rgba(11,15,25,0)',
-            'rgba(11,15,25,0.35)',
-            'rgba(11,15,25,0.74)',
-            'rgba(11,15,25,0.94)',
+            'rgba(11,15,25,0)',
+            'rgba(11,15,25,0.08)',
+            'rgba(11,15,25,0.82)',
             'rgba(11,15,25,1)',
           ]}
+          locations={[0, 0.78, 0.84, 0.93, 1]}
           style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
         />
       </View>
@@ -140,14 +150,10 @@ export function LoginScreen() {
             showsVerticalScrollIndicator={false}
           >
             <Animated.View entering={FadeInDown.duration(380)}>
-              <View className="h-[250px]" />
-              <Text className="text-[36px] font-extrabold tracking-tight text-bone">Accedi</Text>
-              <Text className="mt-2 max-w-[30ch] text-[15px] leading-6 text-mist">
-                Inserisci le tue credenziali per continuare
-              </Text>
+              <View className="h-[260px]" />
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.delay(80).duration(380)} className="mt-9 gap-3">
+            <Animated.View entering={FadeInDown.delay(80).duration(380)} className="mt-6 gap-4">
               <Field
                 icon={<User size={19} color={palette.textMuted} strokeWidth={1.9} />}
                 value={username}
@@ -177,9 +183,7 @@ export function LoginScreen() {
                   void handleSignIn();
                 }}
                 trailing={
-                  <PressableScale
-                    haptic="none"
-                    scaleTo={0.88}
+                  <Pressable
                     hitSlop={10}
                     accessibilityLabel={showPassword ? 'Nascondi password' : 'Mostra password'}
                     onPress={() => setShowPassword((visible) => !visible)}
@@ -190,44 +194,44 @@ export function LoginScreen() {
                     ) : (
                       <Eye size={20} color="rgba(244,242,237,0.6)" strokeWidth={1.9} />
                     )}
-                  </PressableScale>
+                  </Pressable>
                 }
               />
 
-              {error ? <Text className="px-1 text-[13px] font-bold text-tangerine-soft">{error}</Text> : null}
+              {error ? (
+                <Text className="px-1 text-[13px] font-bold" style={{ color: palette.accentSoft }}>
+                  {error}
+                </Text>
+              ) : null}
 
-              <PressableScale
+              <Pressable
                 onPress={() => {
                   void handleSignIn();
                 }}
-                disabled={!canSubmit || loading}
-                haptic="confirm"
-                scaleTo={0.975}
+                disabled={loading}
                 accessibilityLabel="Accedi"
-                className={`mt-2 h-[58px] flex-row items-center justify-center rounded-control ${
-                  canSubmit ? 'bg-tangerine' : 'bg-white/10'
-                }`}
+                className="mt-6 h-[62px] min-w-[260px] flex-row items-center justify-center self-center rounded-control px-10"
                 style={
-                  canSubmit
-                    ? {
-                        shadowColor: palette.accent,
-                        shadowOpacity: 0.3,
-                        shadowRadius: 18,
-                        shadowOffset: { width: 0, height: 10 },
-                        elevation: 9,
-                      }
-                    : undefined
+                  {
+                    backgroundColor: canSubmit ? '#C5161D' : 'transparent',
+                    borderWidth: 2,
+                    borderColor: '#C5161D',
+                    shadowOpacity: 0,
+                    shadowRadius: 0,
+                    shadowOffset: { width: 0, height: 0 },
+                    elevation: 0,
+                  }
                 }
               >
                 {loading ? (
                   <View className="mr-2">
-                    <ActivityIndicator color="#0B0F19" />
+                    <ActivityIndicator color={canSubmit ? '#FFFFFF' : '#C5161D'} />
                   </View>
                 ) : null}
-                <Text className={`text-[17px] font-extrabold tracking-tight ${canSubmit ? 'text-ink-950' : 'text-bone/45'}`}>
+                <Text className="text-[18px] font-extrabold tracking-tight" style={{ color: canSubmit ? '#F4F2ED' : '#C5161D' }}>
                   {loading ? 'Verifica…' : 'Accedi'}
                 </Text>
-              </PressableScale>
+              </Pressable>
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(140).duration(380)} className="mt-7 gap-3">
@@ -237,19 +241,20 @@ export function LoginScreen() {
                 <View className="h-px flex-1 bg-ink-700" />
               </View>
 
-              <PressableScale
+              <Pressable
                 onPress={() => {
                   void quickUnlock();
                 }}
                 disabled={!quickUnlockAvailable}
                 accessibilityLabel="Sblocco rapido"
-                className={`h-[56px] flex-row items-center justify-center gap-2.5 rounded-control border ${
-                  quickUnlockAvailable ? 'border-tangerine/35 bg-tangerine/10' : 'border-ink-700 bg-ink-900'
+                className={`h-[62px] min-w-[260px] flex-row items-center justify-center self-center rounded-control px-10 ${
+                  quickUnlockAvailable ? 'bg-[#1E5BB8]' : 'bg-[#1A2336]'
                 }`}
               >
-                <Fingerprint size={22} color={palette.accent} strokeWidth={1.9} />
-                <Text className="text-[16px] font-extrabold tracking-tight text-bone">Sblocco Rapido</Text>
-              </PressableScale>
+                <Text className={`text-[16px] font-extrabold tracking-tight ${quickUnlockAvailable ? 'text-bone' : 'text-bone/55'}`}>
+                  Sblocco Biometrico
+                </Text>
+              </Pressable>
             </Animated.View>
 
             <View className="mt-auto items-center pt-10">
@@ -280,7 +285,7 @@ const Field = React.forwardRef<TextInputRef, FieldProps>(function Field(
 
   return (
     <View
-      className={`h-[60px] flex-row items-center gap-3 rounded-control border border-white/10 bg-white/5 pl-4 ${
+      className={`h-[60px] flex-row items-center gap-3 rounded-control border border-ink-700 bg-ink-900 pl-4 ${
         trailing ? 'pr-2' : 'pr-4'
       } ${focused ? 'border-tangerine' : ''}`}
     >

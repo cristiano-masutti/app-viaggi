@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MemoriesTab } from '@/components/memories/MemoriesTab';
@@ -9,7 +9,6 @@ import { buildEditConfig, newEntityId, type EditTarget } from '@/components/orga
 import { OrganizeTab } from '@/components/organize/OrganizeTab';
 import { EditSheet, type EditValues } from '@/components/sheets/EditSheet';
 import { HeaderIconButton, ScreenHeader } from '@/components/ui/ScreenHeader';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { SegmentedSwitcher } from '@/components/ui/SegmentedSwitcher';
 import { useToast } from '@/components/ui/Toast';
 import { DocumentViewerModal } from '@/components/viewers/DocumentViewerModal';
@@ -232,15 +231,14 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
         pinned
         onHeight={setHeaderHeight}
         left={
-          <PressableScale
+          <Pressable
             onPress={() => navigation.goBack()}
-            scaleTo={0.9}
             accessibilityLabel="Torna ai miei viaggi"
           >
             <HeaderIconButton>
               <ArrowLeft size={19} color={palette.text} strokeWidth={2.2} />
             </HeaderIconButton>
-          </PressableScale>
+          </Pressable>
         }
       >
         <SegmentedSwitcher options={TABS} value={tab} onChange={setTab} />

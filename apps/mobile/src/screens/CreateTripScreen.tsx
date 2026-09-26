@@ -1,14 +1,13 @@
 import * as ImagePicker from 'expo-image-picker';
 import { CalendarDays, Camera, ImagePlus, Phone, UserPlus, UserRound, X } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui/Buttons';
 import { SectionLabel } from '@/components/ui/Card';
 import { FormField } from '@/components/ui/FormField';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { maskItalianDate, parseItalianDate, toISO } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
@@ -96,15 +95,14 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
   return (
     <SafeAreaView className="flex-1 bg-ink-950" edges={['top', 'bottom']}>
       <View className="flex-row items-center gap-3 border-b border-ink-700 px-[18px] pb-3.5 pt-1">
-        <PressableScale
+        <Pressable
           onPress={() => navigation.goBack()}
-          scaleTo={0.94}
           accessibilityLabel="Annulla creazione viaggio"
           className="h-[42px] flex-row items-center gap-1.5 rounded-[14px] border border-ink-700 bg-ink-900 px-3"
         >
           <X size={17} color={palette.text} strokeWidth={2.1} />
           <Text className="text-[13.5px] font-bold tracking-tight text-bone">Annulla</Text>
-        </PressableScale>
+        </Pressable>
         <Text className="flex-1 text-center text-[16.5px] font-extrabold tracking-tight text-white">
           Nuovo Viaggio
         </Text>
@@ -121,11 +119,10 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
           {/* 1 · Copertina — un solo box, dal rullino */}
           <View className="gap-2.5">
             <SectionLabel>Copertina</SectionLabel>
-            <PressableScale
+            <Pressable
               onPress={() => {
                 void pickCover();
               }}
-              scaleTo={0.985}
               accessibilityLabel={cover ? 'Cambia foto di copertina' : 'Carica una foto dal rullino'}
               style={{ height: COVER_HEIGHT }}
               className="w-full items-center justify-center overflow-hidden rounded-card border border-ink-700 bg-ink-900"
@@ -149,7 +146,7 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
                   <Text className="text-[12px] font-semibold text-mist">Formato consigliato 16:9</Text>
                 </View>
               )}
-            </PressableScale>
+            </Pressable>
           </View>
 
           {/* 2 · Destinazione */}
@@ -243,31 +240,28 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
                 autoCapitalize="words"
                 icon={<UserPlus size={16} color={palette.textMuted} strokeWidth={2} />}
               />
-              <PressableScale
+              <Pressable
                 onPress={addCrewMember}
                 disabled={crewInput.trim().length === 0}
-                scaleTo={0.94}
                 accessibilityLabel="Aggiungi compagno"
                 className="h-[54px] items-center justify-center rounded-control border border-ink-700 bg-ink-850 px-4"
               >
                 <Text className="text-[13.5px] font-extrabold tracking-tight text-bone">Aggiungi</Text>
-              </PressableScale>
+              </Pressable>
             </View>
 
             {crew.length > 0 ? (
               <View className="flex-row flex-wrap gap-2">
                 {crew.map((name) => (
                   <Animated.View key={name} layout={LinearTransition.duration(180)} entering={FadeIn}>
-                    <PressableScale
-                      haptic="select"
-                      scaleTo={0.92}
+                    <Pressable
                       accessibilityLabel={`Rimuovi ${name}`}
                       onPress={() => setCrew((previous) => previous.filter((item) => item !== name))}
                       className="h-9 flex-row items-center gap-2 rounded-chip border border-ink-700 bg-ink-900 px-3.5"
                     >
                       <Text className="text-[13px] font-bold text-bone">{name}</Text>
                       <X size={13} color={palette.textMuted} strokeWidth={2.4} />
-                    </PressableScale>
+                    </Pressable>
                   </Animated.View>
                 ))}
               </View>
