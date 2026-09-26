@@ -6,6 +6,7 @@ si accede, si entra in un viaggio, si filtrano i ricordi, si modificano i
 documenti e si crea un viaggio nuovo senza toccare una riga di codice.
 
 ```bash
+fnm use            # oppure: nvm use — legge .nvmrc (Node 24 LTS)
 npm install
 npm run ios        # oppure: npm run android
 npm run typecheck  # tsc --noEmit
@@ -13,6 +14,38 @@ npm run typecheck  # tsc --noEmit
 
 > Le dipendenze native sono già allineate a Expo SDK 57: `npx expo start` basta
 > per Expo Go o per una dev build.
+
+### Versione di Node
+
+| File | Ruolo |
+| --- | --- |
+| `.nvmrc` | La versione di riferimento: **Node 24 LTS**. La leggono fnm, nvm, GitHub Actions (`node-version-file`) e Renovate. |
+| `package.json` → `engines` / `devEngines` | Il range accettato, `^22.13.0 \|\| >=24.3.0`, cioè quello di React Native 0.86 senza Node 20 (fuori supporto da aprile 2026). |
+| `.npmrc` → `engine-strict=true` | Con un Node fuori range `npm install` e `npm run …` si fermano con `EBADDEVENGINES` invece di installare lo stesso; anche gli `EBADENGINE` delle dipendenze diventano errori. |
+
+Il modo più comodo è [fnm](https://github.com/Schniz/fnm), che cambia versione
+da solo entrando nella cartella:
+
+```bash
+brew install fnm                                   # macOS; su Windows: winget install Schniz.fnm
+echo 'eval "$(fnm env --use-on-cd)"' >> ~/.zshrc   # poi riapri il terminale
+cd app-viaggi && fnm install                       # installa la versione di .nvmrc
+```
+
+Ogni versione di Node porta il suo npm (Node 24 → npm 11): non serve
+`npm i -g npm`. Dopo un cambio di versione maggiore conviene ripartire puliti
+con `npm ci`.
+
+### `overrides` in package.json
+
+`xcode` (usato da `@expo/config-plugins` per il prebuild iOS) dipende ancora da
+`uuid@7`, deprecato e colpito da
+[GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq): da solo
+generava tutti i 10 avvisi di `npm audit`. L'override forza `uuid@^11.1.1` solo
+sotto `xcode`, che ne usa unicamente `v4()`, ancora esportato in CommonJS.
+Verificato con `npx expo prebuild --platform ios`. Quando Expo aggiornerà
+`xcode` l'override si può togliere. **Mai `npm audit fix --force`**: per
+"risolvere" riporterebbe Expo alla 46.
 
 ---
 
