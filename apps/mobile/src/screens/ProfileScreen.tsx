@@ -1,10 +1,10 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Fingerprint, IdCard, LogOut, Pencil, Salad, Stethoscope } from 'lucide-react-native';
+import { Camera, Fingerprint, IdCard, LogOut, Pencil, Stethoscope } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { OfflineBadge } from '@/components/offline/OfflineStatus';
+import { EditSheet } from '@/components/sheets/EditSheet';
 import { GhostButton } from '@/components/ui/Buttons';
 import { Card, SectionLabel } from '@/components/ui/Card';
 import { CopyChip } from '@/components/ui/CopyChip';
@@ -34,6 +34,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
 
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio);
+  const [editingMedicalNotes, setEditingMedicalNotes] = useState(false);
   const [passportZoom, setPassportZoom] = useState(false);
   const passportOffline = useOfflineDocument(PROFILE_PASSPORT_DOC_ID);
 
@@ -171,9 +172,6 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                   Collegato automaticamente a ogni viaggio
                 </Text>
               </View>
-              {/* La scansione segue la stessa regola dei documenti di viaggio:
-                  sta sul telefono, non va scaricata al controllo passaporti. */}
-              <OfflineBadge docId={PROFILE_PASSPORT_DOC_ID} />
             </View>
 
             <View className="flex-row gap-2.5">
@@ -224,15 +222,10 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
           </Card>
         </View>
 
-        {/* Dieta e note mediche */}
+        {/* Allergie e note mediche */}
         <View className="gap-3">
-          <SectionLabel>Dieta &amp; note mediche</SectionLabel>
+          <SectionLabel>Allergie &amp; note mediche</SectionLabel>
           <Card>
-            <InfoBlock
-              icon={<Salad size={16} color={palette.accentSoft} strokeWidth={2} />}
-              label="PREFERENZE ALIMENTARI"
-              value={profile.diet}
-            />
             <InfoBlock
               icon={<Stethoscope size={16} color={palette.accentSoft} strokeWidth={2} />}
               label="ALLERGIE E NOTE D'EMERGENZA"
@@ -244,7 +237,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
             <GhostButton
               label="Modifica note"
               icon={<Pencil size={15} color={palette.text} strokeWidth={2} />}
-              onPress={() => toast.show('Editing note: collegare la modale rapida')}
+              onPress={() => setEditingMedicalNotes(true)}
             />
           </Card>
         </View>
@@ -288,6 +281,28 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
           />
         </Animated.View>
       </ScrollView>
+
+      <EditSheet
+        visible={editingMedicalNotes}
+        title="Allergie & note mediche"
+        subtitle="Visibili solo al coordinatore del viaggio"
+        fields={[
+          {
+            key: 'medicalNotes',
+            label: "ALLERGIE E NOTE D'EMERGENZA",
+            placeholder: 'Allergie, intolleranze, farmaci o indicazioni utili in emergenza',
+            multiline: true,
+          },
+        ]}
+        initialValues={{ medicalNotes: profile.medicalNotes }}
+        saveLabel="Salva note"
+        onSave={(values) => {
+          patchProfile({ medicalNotes: (values.medicalNotes ?? '').trim() });
+          setEditingMedicalNotes(false);
+          toast.show('Allergie aggiornate');
+        }}
+        onClose={() => setEditingMedicalNotes(false)}
+      />
 
       {/* Si apre dalla copia locale quando c'è: al gate non si dipende dalla rete. */}
       <ImageZoomModal

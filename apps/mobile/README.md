@@ -199,7 +199,8 @@ stato della UI:
 | Marocco Express 🇲🇦 | concluso | Archivio con ricordi e note |
 | Portogallo Surf 🇵🇹 | concluso | Archivio leggero |
 
-Il login accetta qualunque credenziale. Lo "Sblocco Rapido" compare solo quando
+Il login accetta qualunque credenziale. In sviluppo (`__DEV__`) il nome utente
+può anche restare vuoto. Lo "Sblocco Rapido" compare solo quando
 il device ha hardware biometrico, un'impronta registrata e una sessione salvata:
 è volutamente agnostico — icona neutra e dicitura identica su iOS e Android.
 

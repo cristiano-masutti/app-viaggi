@@ -1,7 +1,7 @@
 import { X } from 'lucide-react-native';
 import React from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { haptics } from '@/lib/haptics';
 
@@ -22,11 +22,13 @@ interface Props {
  * davvero — al banco del check-in.
  */
 export function ImageZoomModal({ uri, title, subtitle, onClose }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal visible={!!uri} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View className="flex-1 bg-black">
-        <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
-          <View className="flex-row items-center gap-3 px-[18px] pb-3 pt-2">
+        <SafeAreaView className="flex-1" edges={['bottom']}>
+          <View className="flex-row items-center gap-3 px-[18px] pb-3" style={{ paddingTop: insets.top + 10 }}>
             <Pressable
               onPress={() => {
                 haptics.tap();

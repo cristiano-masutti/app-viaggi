@@ -2,7 +2,7 @@ import { CloudOff, FileText, HardDriveDownload, Share2, ShieldCheck, X } from 'l
 import React from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GhostButton } from '@/components/ui/Buttons';
 import { SmartImage } from '@/components/ui/SmartImage';
@@ -34,13 +34,14 @@ interface Props {
 export function DocumentViewerModal({ doc, onClose }: Props) {
   const toast = useToast();
   const { uri, entry } = useDocumentSource(doc);
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={!!doc} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <SafeAreaView className="flex-1 bg-ink-950" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-ink-950" edges={['bottom']}>
         {doc ? (
           <>
-            <View className="flex-row items-center gap-3 px-[18px] pb-4 pt-2">
+            <View className="flex-row items-center gap-3 px-[18px] pb-4" style={{ paddingTop: insets.top + 10 }}>
               <Pressable
                 onPress={() => {
                   haptics.tap();

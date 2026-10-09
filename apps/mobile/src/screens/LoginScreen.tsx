@@ -46,6 +46,7 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quickUnlockAvailable, setQuickUnlockAvailable] = useState(false);
+  const isDevUsernameOptional = __DEV__;
 
   const quickUnlock = useCallback(async () => {
     setError(null);
@@ -84,7 +85,7 @@ export function LoginScreen() {
   }, []);
 
   const handleSignIn = useCallback(async () => {
-    const missingUsername = username.trim().length === 0;
+    const missingUsername = !isDevUsernameOptional && username.trim().length === 0;
     const missingPassword = password.length === 0;
 
     if (missingUsername || missingPassword) {
@@ -110,9 +111,9 @@ export function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  }, [password, signIn, username]);
+  }, [isDevUsernameOptional, password, signIn, username]);
 
-  const canSubmit = username.trim().length > 0 && password.length > 0;
+  const canSubmit = password.length > 0 && (isDevUsernameOptional || username.trim().length > 0);
 
   return (
     <View className="flex-1 bg-ink-950">
@@ -237,7 +238,7 @@ export function LoginScreen() {
               </Pressable>
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.delay(140).duration(380)} className="mt-7 gap-3">
+            <Animated.View entering={FadeInDown.delay(140).duration(380)} className="mt-5 gap-5">
               <View className="w-full flex-row items-center gap-3">
                 <View className="h-px flex-1 bg-ink-700" />
                 <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-bone/40">oppure</Text>
