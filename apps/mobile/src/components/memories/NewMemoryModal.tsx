@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui/Buttons';
 import { FilterChipRow } from '@/components/ui/FilterChipRow';
@@ -45,6 +45,7 @@ const CAPTION_MAX = 90;
  * d'ingresso per aggiungere contenuti a un viaggio.
  */
 export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }: Props) {
+  const insets = useSafeAreaInsets();
   const [dayId, setDayId] = useState<DayId>(defaultDayId);
   const [format, setFormat] = useState<'media' | 'note'>('media');
   const [visibility, setVisibility] = useState<MemoryVisibility>('crew');
@@ -88,7 +89,7 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
 
   return (
     <FullScreenSheet visible={visible} onClose={onClose}>
-      <View className="flex-row items-center gap-3 px-[18px] pb-3 pt-1">
+      <View className="flex-row items-center gap-3 px-[18px] pb-3" style={{ paddingTop: insets.top + 10 }}>
         <Pressable
           onPress={() => {
             haptics.tap();
@@ -222,48 +223,6 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
             </Animated.View>
           )}
 
-          {/* 3 · Visibilità */}
-          <View className="gap-2.5">
-            <StepLabel step={3} text="Chi può vederlo?" />
-            <View className="flex-row gap-2 rounded-control border border-ink-700 bg-ink-900 p-[5px]">
-              <VisibilityOption
-                active={visibility === 'crew'}
-                label="Pubblica per la Crew"
-                icon={
-                  <Users
-                    size={15}
-                    color={visibility === 'crew' ? palette.accentSoft : 'rgba(244,242,237,0.55)'}
-                    strokeWidth={2.2}
-                  />
-                }
-                onPress={() => {
-                  haptics.select();
-                  setVisibility('crew');
-                }}
-              />
-              <VisibilityOption
-                active={visibility === 'private'}
-                label="Privata"
-                icon={
-                  <Lock
-                    size={15}
-                    color={visibility === 'private' ? palette.accentSoft : 'rgba(244,242,237,0.55)'}
-                    strokeWidth={2.2}
-                  />
-                }
-                onPress={() => {
-                  haptics.select();
-                  setVisibility('private');
-                }}
-              />
-            </View>
-            <Text className="text-[11.5px] font-semibold leading-[17px] text-mist">
-              {visibility === 'crew'
-                ? 'Lo vedranno tutti i compagni di questo viaggio.'
-                : 'Resta solo sul tuo profilo: nessun altro della crew lo vedrà.'}
-            </Text>
-          </View>
-
           <PrimaryButton
             label={format === 'note' ? 'Salva nel Diario 📝' : 'Salva il ricordo 🚀'}
             haptic="confirm"
@@ -369,7 +328,7 @@ function FullScreenSheet({
 }) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <SafeAreaView className="flex-1 bg-ink-950" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-ink-950" edges={['bottom']}>
         {children}
       </SafeAreaView>
     </Modal>

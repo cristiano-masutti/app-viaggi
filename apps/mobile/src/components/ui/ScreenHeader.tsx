@@ -62,7 +62,7 @@ export function ScreenHeader({
     <View
       pointerEvents="box-none"
       onLayout={(event) => onHeight?.(event.nativeEvent.layout.height)}
-      style={{ paddingTop: insets.top + (compact ? 4 : 10) }}
+      style={{ paddingTop: insets.top + (compact ? 10 : 14) }}
       className="absolute left-0 right-0 top-0 z-20"
     >
       <Animated.View pointerEvents="none" style={veil} className="absolute inset-0">
