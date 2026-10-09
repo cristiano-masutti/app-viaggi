@@ -4,7 +4,6 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { EditSheet } from '@/components/sheets/EditSheet';
 import { GhostButton } from '@/components/ui/Buttons';
 import { Card, SectionLabel } from '@/components/ui/Card';
 import { CopyChip } from '@/components/ui/CopyChip';
@@ -35,6 +34,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio);
   const [editingMedicalNotes, setEditingMedicalNotes] = useState(false);
+  const [medicalNotesDraft, setMedicalNotesDraft] = useState(profile.medicalNotes);
   const [passportZoom, setPassportZoom] = useState(false);
   const passportOffline = useOfflineDocument(PROFILE_PASSPORT_DOC_ID);
 
@@ -158,7 +158,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
 
         {/* Passaporto Master — una sola foto, riusata da tutti i viaggi */}
         <View className="gap-3">
-          <SectionLabel>Passaporto master</SectionLabel>
+          <SectionLabel>Passaporto</SectionLabel>
           <Card>
             <View className="flex-row items-center gap-3">
               <View className="h-[38px] w-[38px] items-center justify-center rounded-xl border border-ink-700 bg-ink-850">
@@ -166,10 +166,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
               </View>
               <View className="flex-1 gap-0.5">
                 <Text className="text-[15px] font-extrabold tracking-tight text-white">
-                  Passaporto Italiano
-                </Text>
-                <Text className="text-[12px] font-semibold text-mist">
-                  Collegato automaticamente a ogni viaggio
+                  Passaporto
                 </Text>
               </View>
             </View>
@@ -179,24 +176,17 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
               <MiniField label="SCADENZA" value={profile.passport.expiry} />
             </View>
 
-            {/* Miniatura orizzontale compatta: la scansione non sta mai aperta a display. */}
-            <View className="flex-row items-center gap-3">
-              <View className="h-16 w-24 overflow-hidden rounded-xl border border-ink-700 bg-ink-800">
-                <SmartImage uri={profile.passport.photoUri} style={{ width: '100%', height: '100%' }} />
-              </View>
-
-              <View className="flex-1 gap-2">
-                <GhostButton label="👁️ Visualizza Foto" onPress={() => setPassportZoom(true)} />
-                <GhostButton
-                  label="📷 Aggiorna"
-                  onPress={() => {
-                    void pickImage((uri) => {
-                      patchProfile({ passport: { ...profile.passport, photoUri: uri } });
-                      toast.show('Scansione del passaporto aggiornata');
-                    });
-                  }}
-                />
-              </View>
+            <View className="gap-2">
+              <GhostButton label="👁️ Visualizza Foto" onPress={() => setPassportZoom(true)} />
+              <GhostButton
+                label="📷 Aggiorna"
+                onPress={() => {
+                  void pickImage((uri) => {
+                    patchProfile({ passport: { ...profile.passport, photoUri: uri } });
+                    toast.show('Scansione del passaporto aggiornata');
+                  });
+                }}
+              />
             </View>
           </Card>
         </View>
@@ -226,19 +216,76 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
         <View className="gap-3">
           <SectionLabel>Allergie &amp; note mediche</SectionLabel>
           <Card>
-            <InfoBlock
-              icon={<Stethoscope size={16} color={palette.accentSoft} strokeWidth={2} />}
-              label="ALLERGIE E NOTE D'EMERGENZA"
-              value={profile.medicalNotes}
-            />
-            <Text className="text-[11.5px] font-semibold leading-[17px] text-mist">
-              Condivise solo con il coordinatore del viaggio, mai con il resto della crew.
-            </Text>
-            <GhostButton
-              label="Modifica note"
-              icon={<Pencil size={15} color={palette.text} strokeWidth={2} />}
-              onPress={() => setEditingMedicalNotes(true)}
-            />
+            {editingMedicalNotes ? (
+              <>
+                <View className="rounded-[16px] border border-tangerine/45 bg-ink-850 px-4 py-3.5">
+                  <View className="mb-1.5 flex-row items-center gap-2">
+                    <Stethoscope size={16} color={palette.accentSoft} strokeWidth={2} />
+                    <Text className="text-[10.5px] font-bold tracking-[0.6px] text-bone/45">
+                      ALLERGIE E NOTE D&apos;EMERGENZA
+                    </Text>
+                  </View>
+                  <TextInput
+                    value={medicalNotesDraft}
+                    onChangeText={setMedicalNotesDraft}
+                    multiline
+                    maxLength={BIO_MAX_LENGTH}
+                    placeholder="Allergie, intolleranze, farmaci o indicazioni utili in emergenza"
+                    placeholderTextColor={palette.textMuted}
+                    textAlignVertical="top"
+                    className="min-h-[112px] p-0 text-[14.5px] font-medium leading-[22px] text-bone"
+                  />
+                  <Text className="self-end text-[11px] font-bold text-bone/40">
+                    {`${medicalNotesDraft.length}/${BIO_MAX_LENGTH}`}
+                  </Text>
+                </View>
+
+                <Text className="text-[11.5px] font-semibold leading-[17px] text-mist">
+                  Condivise solo con il coordinatore del viaggio, mai con il resto della crew.
+                </Text>
+
+                <View className="flex-row gap-2">
+                  <GhostButton
+                    label="Annulla"
+                    className="flex-1"
+                    onPress={() => {
+                      setMedicalNotesDraft(profile.medicalNotes);
+                      setEditingMedicalNotes(false);
+                    }}
+                  />
+                  <Pressable
+                    accessibilityLabel="Salva allergie e note mediche"
+                    onPress={() => {
+                      patchProfile({ medicalNotes: medicalNotesDraft.trim() });
+                      setEditingMedicalNotes(false);
+                      toast.show('Allergie aggiornate');
+                    }}
+                    className="h-[48px] flex-1 items-center justify-center rounded-[15px] bg-tangerine"
+                  >
+                    <Text className="text-[14px] font-extrabold tracking-tight text-white">Salva</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <InfoBlock
+                  icon={<Stethoscope size={16} color={palette.accentSoft} strokeWidth={2} />}
+                  label="ALLERGIE E NOTE D'EMERGENZA"
+                  value={profile.medicalNotes}
+                />
+                <Text className="text-[11.5px] font-semibold leading-[17px] text-mist">
+                  Condivise solo con il coordinatore del viaggio, mai con il resto della crew.
+                </Text>
+                <GhostButton
+                  label="Modifica note"
+                  icon={<Pencil size={15} color={palette.text} strokeWidth={2} />}
+                  onPress={() => {
+                    setMedicalNotesDraft(profile.medicalNotes);
+                    setEditingMedicalNotes(true);
+                  }}
+                />
+              </>
+            )}
           </Card>
         </View>
 
@@ -281,28 +328,6 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
           />
         </Animated.View>
       </ScrollView>
-
-      <EditSheet
-        visible={editingMedicalNotes}
-        title="Allergie & note mediche"
-        subtitle="Visibili solo al coordinatore del viaggio"
-        fields={[
-          {
-            key: 'medicalNotes',
-            label: "ALLERGIE E NOTE D'EMERGENZA",
-            placeholder: 'Allergie, intolleranze, farmaci o indicazioni utili in emergenza',
-            multiline: true,
-          },
-        ]}
-        initialValues={{ medicalNotes: profile.medicalNotes }}
-        saveLabel="Salva note"
-        onSave={(values) => {
-          patchProfile({ medicalNotes: (values.medicalNotes ?? '').trim() });
-          setEditingMedicalNotes(false);
-          toast.show('Allergie aggiornate');
-        }}
-        onClose={() => setEditingMedicalNotes(false)}
-      />
 
       {/* Si apre dalla copia locale quando c'è: al gate non si dipende dalla rete. */}
       <ImageZoomModal

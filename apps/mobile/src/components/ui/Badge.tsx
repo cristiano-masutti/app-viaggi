@@ -12,9 +12,9 @@ import Animated, {
 type Tone = 'live' | 'accent' | 'neutral' | 'cream';
 
 const TONE_STYLES: Record<Tone, { container: string; text: string }> = {
-  live: { container: 'border-live/45 bg-live/15', text: 'text-live' },
-  accent: { container: 'border-tangerine/45 bg-tangerine/18', text: 'text-tangerine-tint' },
-  neutral: { container: 'border-ink-700 bg-ink-900/80', text: 'text-bone/75' },
+  live: { container: 'border-[#15803D] bg-[#EAFBF1]', text: 'text-[#15803D]' },
+  accent: { container: 'border-[#A31219] bg-[#FCE9EA]', text: 'text-[#A31219]' },
+  neutral: { container: 'border-[#475569] bg-[#EEF2F7]', text: 'text-[#475569]' },
   cream: { container: 'border-cream-line bg-cream', text: 'text-cream-ink' },
 };
 
