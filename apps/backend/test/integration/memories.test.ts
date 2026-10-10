@@ -195,10 +195,14 @@ describe('GET memories', () => {
     expect(seen).toEqual(all.map((memory) => memory.id));
   });
 
-  it('refuses a malformed cursor', async () => {
+  it.each([
+    ['garbage', 'garbage'],
+    // Data valida ma id non UUID: senza controllo arriverebbe a Postgres come 500.
+    ['a forged id', Buffer.from('2026-09-16T18:42:00.000Z|not-a-uuid').toString('base64url')],
+  ])('refuses a malformed cursor (%s)', async (_case, cursor) => {
     const { as, base } = await setup();
 
-    const response = await as.traveller.get(`${base}?cursor=garbage`);
+    const response = await as.traveller.get(`${base}?cursor=${cursor}`);
 
     expect(response.statusCode).toBe(400);
     expect(response.json().error.code).toBe('INVALID_CURSOR');

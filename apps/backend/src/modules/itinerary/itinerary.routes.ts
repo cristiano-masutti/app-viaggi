@@ -8,6 +8,7 @@ import { claimDocument, releaseDocument, swapDocument } from '../documents/docum
 import { toDocumentDto } from '../documents/documents.schemas.js';
 import { assertDayInTrip } from '../trips/days.js';
 import { COORDINATOR_ONLY } from '../trips/trip-access.js';
+import { lockTrip } from '../trips/trip-lock.js';
 import {
   ActivityDto,
   ActivityParams,
@@ -44,10 +45,11 @@ export const itineraryRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => {
       const { trip } = request;
       const dayIndex = request.params.day;
-      assertDayInTrip(trip, dayIndex);
       const { documentId: requestedDocument, ...fields } = request.body;
 
       const { stay, removedPaths } = await app.prisma.$transaction(async (tx) => {
+        // Il giorno si verifica sotto lock: le date non cambiano finché scriviamo.
+        assertDayInTrip(await lockTrip(tx, trip.id, 'share'), dayIndex);
         const current = await tx.stay.findUnique({
           where: { tripId_dayIndex: { tripId: trip.id, dayIndex } },
         });
@@ -103,10 +105,10 @@ export const itineraryRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const { trip } = request;
       const dayIndex = request.params.day;
-      assertDayInTrip(trip, dayIndex);
       const { documentId, ...fields } = request.body;
 
       const activity = await app.prisma.$transaction(async (tx) => {
+        assertDayInTrip(await lockTrip(tx, trip.id, 'share'), dayIndex);
         if (documentId) await claimDocument(tx, trip.id, documentId);
         return tx.activity.create({
           data: {
@@ -137,9 +139,9 @@ export const itineraryRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => {
       const { trip } = request;
       const { documentId: requestedDocument, dayIndex, ...fields } = request.body;
-      if (dayIndex !== undefined) assertDayInTrip(trip, dayIndex);
 
       const { activity, removedPaths } = await app.prisma.$transaction(async (tx) => {
+        if (dayIndex !== undefined) assertDayInTrip(await lockTrip(tx, trip.id, 'share'), dayIndex);
         const current = await tx.activity.findFirst({
           where: { id: request.params.activityId, tripId: trip.id },
         });

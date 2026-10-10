@@ -14,6 +14,7 @@ import { removeStoredFiles } from '../../storage/cleanup.js';
 import { SignedUrlDto } from '../documents/documents.schemas.js';
 import { assertDayInTrip } from '../trips/days.js';
 import { TripParams } from '../trips/trip-access.js';
+import { lockTrip } from '../trips/trip-lock.js';
 import {
   CreateNoteBody,
   ListMemoriesQuery,
@@ -149,19 +150,22 @@ export const memoryRoutes: FastifyPluginAsyncZod = async (app) => {
 
       if (!request.isMultipart()) {
         const note = parseOrThrow(CreateNoteBody, request.body, 'body');
-        assertDayInTrip(trip, note.dayIndex);
 
-        const memory = await app.prisma.memory.create({
-          data: {
-            tripId: trip.id,
-            authorId,
-            dayIndex: note.dayIndex,
-            kind: MemoryKind.note,
-            visibility: note.visibility,
-            text: note.text,
-            // Una nota privata è sempre "Personale", qualunque etichetta fosse scelta.
-            mood: note.visibility === MemoryVisibility.private ? NoteMood.personal : note.mood,
-          },
+        const memory = await app.prisma.$transaction(async (tx) => {
+          // Il giorno si verifica sotto lock: le date non cambiano finché scriviamo.
+          assertDayInTrip(await lockTrip(tx, trip.id, 'share'), note.dayIndex);
+          return tx.memory.create({
+            data: {
+              tripId: trip.id,
+              authorId,
+              dayIndex: note.dayIndex,
+              kind: MemoryKind.note,
+              visibility: note.visibility,
+              text: note.text,
+              // Una nota privata è sempre "Personale", qualunque etichetta fosse scelta.
+              mood: note.visibility === MemoryVisibility.private ? NoteMood.personal : note.mood,
+            },
+          });
         });
         return reply.status(201).send({ memory: toMemoryDto(memory, noReactions()) });
       }
@@ -175,16 +179,19 @@ export const memoryRoutes: FastifyPluginAsyncZod = async (app) => {
       await app.storage.upload(storagePath, file.bytes, file.type);
 
       try {
-        const memory = await app.prisma.memory.create({
-          data: {
-            ...fields,
-            tripId: trip.id,
-            authorId,
-            kind: file.type.startsWith('video/') ? MemoryKind.video : MemoryKind.photo,
-            storagePath,
-            mimeType: file.type,
-            sizeBytes: file.bytes.length,
-          },
+        const memory = await app.prisma.$transaction(async (tx) => {
+          assertDayInTrip(await lockTrip(tx, trip.id, 'share'), fields.dayIndex);
+          return tx.memory.create({
+            data: {
+              ...fields,
+              tripId: trip.id,
+              authorId,
+              kind: file.type.startsWith('video/') ? MemoryKind.video : MemoryKind.photo,
+              storagePath,
+              mimeType: file.type,
+              sizeBytes: file.bytes.length,
+            },
+          });
         });
         return reply.status(201).send({ memory: toMemoryDto(memory, noReactions()) });
       } catch (error) {

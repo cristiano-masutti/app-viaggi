@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { TripRole } from '../../generated/prisma/enums.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import { countDays } from '../trips/days.js';
+import { seatsTaken } from '../trips/trip-lock.js';
 import { InvitePreviewDto, InviteParams } from './crew.schemas.js';
 
 /**
@@ -72,25 +73,26 @@ export const inviteRoutes: FastifyPluginAsyncZod = async (app) => {
         });
         if (existing) return { tripId: trip.id, joined: false };
 
-        const crewCount = await tx.tripMember.count({ where: { tripId: trip.id } });
-        if (trip.crewCapacity !== null && crewCount >= trip.crewCapacity) {
-          throw new AppError(409, 'TRIP_FULL', 'All the places in this trip are taken');
+        // Il posto riservato a questa persona, se il coordinatore l'aveva invitata
+        // per email: entrando lo occupa, quindi la capienza non cambia.
+        const invitation = user.email
+          ? await tx.tripInvitation.findFirst({
+              where: { tripId: trip.id, email: user.email.toLowerCase(), acceptedAt: null },
+              orderBy: { createdAt: 'asc' },
+            })
+          : null;
+
+        if (!invitation && trip.crewCapacity !== null) {
+          // Chi non era atteso trova posto solo fra quelli non riservati.
+          const seats = await seatsTaken(tx, trip.id);
+          if (seats.total >= trip.crewCapacity) {
+            throw new AppError(409, 'TRIP_FULL', 'All the places in this trip are taken');
+          }
         }
 
         await tx.tripMember.create({ data: { tripId: trip.id, userId: user.id, role: TripRole.traveller } });
-
-        // Il posto riservato a questa persona, se il coordinatore l'aveva invitata per email.
-        if (user.email) {
-          const invitation = await tx.tripInvitation.findFirst({
-            where: { tripId: trip.id, email: user.email.toLowerCase(), acceptedAt: null },
-            orderBy: { createdAt: 'asc' },
-          });
-          if (invitation) {
-            await tx.tripInvitation.update({
-              where: { id: invitation.id },
-              data: { acceptedAt: new Date() },
-            });
-          }
+        if (invitation) {
+          await tx.tripInvitation.update({ where: { id: invitation.id }, data: { acceptedAt: new Date() } });
         }
 
         return { tripId: trip.id, joined: true };

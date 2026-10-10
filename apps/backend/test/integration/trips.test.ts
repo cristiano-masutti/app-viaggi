@@ -103,6 +103,8 @@ describe('POST /api/trips', () => {
     ],
     ['an invalid invitee email', { invitees: [{ name: 'Aisha', email: 'aisha' }] }, '/invitees/0/email'],
     ['a capacity of zero', { crewCapacity: 0 }, '/crewCapacity'],
+    // Il creatore più i due posti riservati della bozza fanno tre.
+    ['a capacity smaller than the creator and the invitees', { crewCapacity: 2 }, '/crewCapacity'],
   ])('rejects %s', async (_case, change, path) => {
     const { app } = await createTestApp();
     const api = await asUser(app, newAuthUser());
@@ -270,16 +272,37 @@ describe('PATCH /api/trips/:tripId', () => {
     ]);
   });
 
-  it('refuses a capacity below the current crew', async () => {
+  it('refuses a capacity below the crew and its reserved places', async () => {
     const { trip, coordinator } = await createTripWithCrew();
+    await prisma.tripInvitation.create({ data: { tripId: trip.id, name: 'Aisha' } });
     const { app } = await createTestApp();
+    const api = await asUser(app, coordinator);
 
-    const response = await (
-      await asUser(app, coordinator)
-    ).patch(`/api/trips/${trip.id}`, { crewCapacity: 1 });
+    const response = await api.patch(`/api/trips/${trip.id}`, { crewCapacity: 2 });
 
     expect(response.statusCode).toBe(409);
-    expect(response.json().error).toMatchObject({ code: 'CAPACITY_BELOW_CREW', details: { crewCount: 2 } });
+    expect(response.json().error).toMatchObject({
+      code: 'CAPACITY_BELOW_CREW',
+      details: { crewCount: 2, pendingInvitations: 1 },
+    });
+    expect((await api.patch(`/api/trips/${trip.id}`, { crewCapacity: 3 })).statusCode).toBe(200);
+  });
+
+  it('never leaves the programme outside the trip when the dates shrink while someone adds to the last day', async () => {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const { trip, coordinator } = await createTripWithCrew();
+      const { app } = await createTestApp();
+      const api = await asUser(app, coordinator);
+
+      await Promise.all([
+        api.patch(`/api/trips/${trip.id}`, { endDate: '2026-09-20' }),
+        api.post(`/api/trips/${trip.id}/days/10/activities`, { name: 'Laguna Blu', place: 'Grindavík' }),
+      ]);
+
+      const { startDate, endDate } = await prisma.trip.findUniqueOrThrow({ where: { id: trip.id } });
+      const lastDay = Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1;
+      expect(await prisma.activity.count({ where: { tripId: trip.id, dayIndex: { gt: lastDay } } })).toBe(0);
+    }
   });
 });
 

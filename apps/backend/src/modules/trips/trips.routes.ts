@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { TripRole } from '../../generated/prisma/enums.js';
 import { AppError } from '../../lib/errors.js';
-import type { PrismaClient } from '../../lib/prisma.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { removeStoredFiles } from '../../storage/cleanup.js';
 import { crewRoutes } from '../crew/crew.routes.js';
 import { documentRoutes } from '../documents/documents.routes.js';
@@ -13,6 +13,7 @@ import { memoryRoutes } from '../memories/memories.routes.js';
 import { assertValidDates, countDays } from './days.js';
 import { generateInviteCode } from './invite-code.js';
 import { COORDINATOR_ONLY, TripParams, tripScope } from './trip-access.js';
+import { lockTrip, seatsTaken } from './trip-lock.js';
 import { loadTripDetail, visibleMediaWhere } from './trip-detail.js';
 import { CreateTripBody, TripDetailResponse, TripSummaryDto, UpdateTripBody } from './trips.schemas.js';
 
@@ -93,33 +94,42 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
         schema: { params: TripParams, body: UpdateTripBody, response: { 200: TripDetailResponse } },
       },
       async (request) => {
-        const { trip } = request;
-        const startDate = request.body.startDate ?? trip.startDate;
-        const endDate = request.body.endDate ?? trip.endDate;
+        const tripId = request.trip.id;
 
-        assertValidDates(startDate, endDate);
+        await app.prisma.$transaction(async (tx) => {
+          // Sotto lock: nessuno aggiunge contenuti o entra mentre le regole cambiano.
+          const trip = await lockTrip(tx, tripId);
+          const startDate = request.body.startDate ?? trip.startDate;
+          const endDate = request.body.endDate ?? trip.endDate;
+          assertValidDates(startDate, endDate);
 
-        const totalDays = countDays(startDate, endDate);
-        const lastDayWithContent = await lastUsedDay(app.prisma, trip.id);
-        if (lastDayWithContent > totalDays) {
-          throw new AppError(409, 'DAYS_HAVE_CONTENT', `Day ${lastDayWithContent} still has content`, {
-            details: { lastDayWithContent },
-          });
-        }
-
-        const { crewCapacity } = request.body;
-        if (crewCapacity) {
-          const crewCount = await app.prisma.tripMember.count({ where: { tripId: trip.id } });
-          if (crewCapacity < crewCount) {
-            throw new AppError(409, 'CAPACITY_BELOW_CREW', `The trip already has ${crewCount} members`, {
-              details: { crewCount },
+          const lastDayWithContent = await lastUsedDay(tx, tripId);
+          if (lastDayWithContent > countDays(startDate, endDate)) {
+            throw new AppError(409, 'DAYS_HAVE_CONTENT', `Day ${lastDayWithContent} still has content`, {
+              details: { lastDayWithContent },
             });
           }
-        }
 
-        await app.prisma.trip.update({ where: { id: trip.id }, data: request.body });
+          const { crewCapacity } = request.body;
+          if (crewCapacity) {
+            const seats = await seatsTaken(tx, tripId);
+            if (crewCapacity < seats.total) {
+              throw new AppError(
+                409,
+                'CAPACITY_BELOW_CREW',
+                `The trip already has ${seats.total} places taken`,
+                {
+                  details: { crewCount: seats.members, pendingInvitations: seats.pendingInvitations },
+                },
+              );
+            }
+          }
+
+          await tx.trip.update({ where: { id: tripId }, data: request.body });
+        });
+
         return {
-          trip: await loadTripDetail(app.prisma, trip.id, request.user.id, request.tripMember.role),
+          trip: await loadTripDetail(app.prisma, tripId, request.user.id, request.tripMember.role),
         };
       },
     );
@@ -153,7 +163,7 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
 };
 
 /** L'ultimo giorno a cui è agganciato qualcosa (0 se il programma è vuoto). */
-async function lastUsedDay(prisma: PrismaClient, tripId: string) {
+async function lastUsedDay(prisma: Prisma.TransactionClient, tripId: string) {
   const where = { tripId };
   const [stay, activity, memory] = await Promise.all([
     prisma.stay.aggregate({ where, _max: { dayIndex: true } }),

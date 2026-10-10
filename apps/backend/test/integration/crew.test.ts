@@ -194,6 +194,46 @@ describe('invite links', () => {
     expect(detail.invitations.map((invitation: { name: string }) => invitation.name)).toEqual(['Tea']);
   });
 
+  it('counts reserved places as taken: a stranger cannot take a seat kept for someone', async () => {
+    const { trip, coordinator } = await createTripWithCrew({ crewCapacity: 3 });
+    const { app } = await createTestApp();
+    await (
+      await asUser(app, coordinator)
+    ).post(`/api/trips/${trip.id}/invitations`, {
+      invitees: [{ name: 'Aisha', email: 'aisha@example.test' }],
+    });
+
+    const stranger = await (
+      await asUser(app, await createUser())
+    ).post(`/api/invites/${trip.inviteCode}/accept`);
+    const aisha = await createUser({ email: 'aisha@example.test' });
+    const invited = await (
+      await asUser(app, { id: aisha.id, email: 'aisha@example.test' })
+    ).post(`/api/invites/${trip.inviteCode}/accept`);
+
+    expect(stranger.statusCode).toBe(409);
+    expect(stranger.json().error.code).toBe('TRIP_FULL');
+    // Chi era atteso entra comunque: occupa il posto che gli era riservato.
+    expect(invited.json()).toEqual({ tripId: trip.id, joined: true });
+    expect(await prisma.tripMember.count({ where: { tripId: trip.id } })).toBe(3);
+    expect(await prisma.tripInvitation.count({ where: { tripId: trip.id, acceptedAt: null } })).toBe(0);
+  });
+
+  it('does not reserve more places than the trip has', async () => {
+    const { trip, coordinator } = await createTripWithCrew({ crewCapacity: 3 });
+    const { app } = await createTestApp();
+    const api = await asUser(app, coordinator);
+
+    const tooMany = await api.post(`/api/trips/${trip.id}/invitations`, {
+      invitees: [{ name: 'Aisha' }, { name: 'Tea' }],
+    });
+    const fits = await api.post(`/api/trips/${trip.id}/invitations`, { invitees: [{ name: 'Aisha' }] });
+
+    expect(tooMany.statusCode).toBe(409);
+    expect(tooMany.json().error.code).toBe('TRIP_FULL');
+    expect(fits.statusCode).toBe(201);
+  });
+
   it('refuses to join a full trip', async () => {
     const { trip } = await createTripWithCrew({ crewCapacity: 2 });
     const latecomer = await createUser();

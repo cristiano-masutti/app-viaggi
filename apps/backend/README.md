@@ -15,7 +15,8 @@ npm run dev                   # http://localhost:4000
 Prima di ogni push:
 
 ```bash
-npm run verify   # lint + format + typecheck + test + build, come la CI
+npm run verify   # lint, format, typecheck, test e build: quello che controlla la CI,
+                 # tranne l'allineamento delle migrazioni (npm run prisma:check, su un DB migrato)
 ```
 
 ---
@@ -69,6 +70,11 @@ manda date ISO e il client le presenta.
   una tabella dei giorni. Alloggi, attività e ricordi si agganciano a
   `dayIndex`: spostare le date sposta il programma, e accorciare il viaggio è
   rifiutato (`409 DAYS_HAVE_CONTENT`) se taglierebbe giorni con contenuti.
+- **Regole fra più righe, sotto lock.** "Nessun contenuto fuori dalle date" e
+  "posti occupati entro la capienza" si violerebbero solo con scritture
+  simultanee: chi le tocca blocca la riga del viaggio (`lockTrip()` in
+  `trips/trip-lock.ts`), in modo esclusivo se cambia le regole o occupa un
+  posto, condiviso se aggiunge contenuti a un giorno.
 - **Documenti in due passi.** Prima `POST …/documents` (il file, oppure un QR
   senza file) restituisce un id; poi lo si collega allo slot passando
   `documentId` nel body (alloggio, attività, mezzo, polizza, dogana).
@@ -83,9 +89,11 @@ manda date ISO e il client le presenta.
 - **Passaporto.** È uno per persona (Passaporto Master) e sta nel profilo; nel
   dettaglio viaggio `documents.passport` è quello di chi chiede.
 - **Crew e inviti.** Il link `vibemakers.travel/join/<inviteCode>` ha circa 59
-  bit casuali e fa entrare come viaggiatore, entro `crewCapacity` (`409
-  TRIP_FULL`, garantito anche con ingressi simultanei). I posti riservati
-  (`invitations`) si chiudono da soli quando entra qualcuno con la stessa email.
+  bit casuali e fa entrare come viaggiatore. I posti riservati (`invitations`)
+  **occupano posti**: membri + posti riservati non superano mai `crewCapacity`
+  (`409 TRIP_FULL`), e chi non era atteso non può prendere il posto tenuto per
+  un altro. Chi entra con l'email di un posto riservato lo occupa (e il posto si
+  chiude da solo), anche se il viaggio è al completo.
   Il coordinatore può rigenerare il link (quello vecchio smette subito di
   funzionare). Un viaggio non resta mai senza coordinatore (`409 LAST_COORDINATOR`).
 - **Ricordi.** `crew` li vede tutto il gruppo, `private` solo l'autore (per

@@ -40,7 +40,7 @@ npm run backend:db:up
 npm run backend:prisma:migrate
 npm run backend:dev
 npm run backend:test      # test di unità e integrazione
-npm run backend:verify    # tutto quello che controlla la CI
+npm run backend:verify    # lint, format, typecheck, test e build (come la CI, tranne il controllo delle migrazioni)
 ```
 
 ## Note

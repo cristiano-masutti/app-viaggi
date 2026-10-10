@@ -6,6 +6,7 @@ import { TripRole } from '../../generated/prisma/enums.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import { generateInviteCode } from '../trips/invite-code.js';
 import { COORDINATOR_ONLY, TripParams } from '../trips/trip-access.js';
+import { lockTrip, seatsTaken } from '../trips/trip-lock.js';
 import {
   AddInvitationsBody,
   InvitationDto,
@@ -26,7 +27,7 @@ const lastCoordinator = () =>
  * lasciarlo vuoto passando entrambi il conteggio.
  */
 async function assertNotLastCoordinator(tx: Prisma.TransactionClient, tripId: string, userId: string) {
-  await tx.$queryRaw`SELECT 1 FROM "Trip" WHERE "id" = ${tripId}::uuid FOR UPDATE`;
+  await lockTrip(tx, tripId);
   const coordinators = await tx.tripMember.findMany({
     where: { tripId, role: TripRole.coordinator },
     select: { userId: true },
@@ -47,13 +48,23 @@ export const crewRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) => {
-      const invitations = await app.prisma.tripInvitation.createManyAndReturn({
-        data: request.body.invitees.map((invitee) => ({
-          ...invitee,
-          tripId: request.trip.id,
-          invitedById: request.user.id,
-        })),
+      const tripId = request.trip.id;
+      const { invitees } = request.body;
+
+      const invitations = await app.prisma.$transaction(async (tx) => {
+        // Un posto riservato occupa un posto: sotto lock, nessuno entra nel frattempo.
+        const { crewCapacity } = await lockTrip(tx, tripId);
+        const seats = await seatsTaken(tx, tripId);
+        if (crewCapacity !== null && seats.total + invitees.length > crewCapacity) {
+          throw new AppError(409, 'TRIP_FULL', 'Not enough places left in this trip', {
+            details: { placesLeft: Math.max(0, crewCapacity - seats.total) },
+          });
+        }
+        return tx.tripInvitation.createManyAndReturn({
+          data: invitees.map((invitee) => ({ ...invitee, tripId, invitedById: request.user.id })),
+        });
       });
+
       return reply.status(201).send({ invitations });
     },
   );

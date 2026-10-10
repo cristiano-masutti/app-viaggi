@@ -44,7 +44,11 @@ export const CreateTripBody = validDates(
     invitees: z.array(InviteeInput).max(50).default([]),
     emergencies: z.array(EmergencyInput).max(10).default([]),
   }),
-);
+).refine((trip) => trip.crewCapacity === undefined || 1 + trip.invitees.length <= trip.crewCapacity, {
+  // I posti riservati occupano posti, come chi crea il viaggio.
+  path: ['crewCapacity'],
+  message: 'The capacity must fit the creator and every invitee',
+});
 
 export const UpdateTripBody = z.object({
   title: Title.optional(),
