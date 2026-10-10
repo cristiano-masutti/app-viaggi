@@ -58,8 +58,16 @@ const MemoryBase = z.object({
   createdAt: isoDateTime,
 });
 
+const reactionCount = z.number().int().positive().optional();
+
 export const ReactionsDto = z.object({
-  reactions: z.partialRecord(z.enum(Reaction), z.number().int().positive()),
+  /** Solo le reazioni presenti: `{ fire: 2, love: 1 }`. Chiavi esplicite, così i client generati le conoscono. */
+  reactions: z.object({
+    fire: reactionCount,
+    laugh: reactionCount,
+    love: reactionCount,
+    mindblown: reactionCount,
+  } satisfies Record<Reaction, typeof reactionCount>),
   myReaction: z.enum(Reaction).nullable(),
 });
 
@@ -70,6 +78,11 @@ const MediaMemoryDto = MemoryBase.extend({
   blurhash: z.string().nullable(),
   durationSeconds: z.number().int().nullable(),
   mimeType: z.string(),
+  /**
+   * URL firmato del file, valido `SIGNED_URL_TTL_SECONDS`: la griglia mostra le
+   * foto senza una chiamata per ognuna. `null` se lo storage non ha risposto.
+   */
+  mediaUrl: z.url().nullable(),
 }).extend(ReactionsDto.shape);
 
 const NoteMemoryDto = MemoryBase.extend({

@@ -8,13 +8,15 @@
 export interface ObjectStorage {
   upload(path: string, body: Buffer, contentType: string): Promise<void>;
   createSignedUrl(path: string, expiresInSeconds: number): Promise<string>;
+  /** Più URL firmati con una sola chiamata: per le liste (es. le foto dei ricordi). */
+  createSignedUrls(paths: string[], expiresInSeconds: number): Promise<Map<string, string>>;
   remove(paths: string[]): Promise<void>;
 }
 
 /** Lo storage non ha risposto o ha rifiutato l'operazione: per il client è un 502. */
 export class StorageError extends Error {
   constructor(
-    readonly operation: 'upload' | 'createSignedUrl' | 'remove',
+    readonly operation: 'upload' | 'createSignedUrl' | 'createSignedUrls' | 'remove',
     message: string,
     options?: { cause?: unknown },
   ) {

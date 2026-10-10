@@ -17,7 +17,7 @@ export function tripBadge(trip: Trip): string {
 /** Riga di metadati sotto il titolo. */
 export function tripMeta(trip: Trip): string {
   if (trip.status === 'past') {
-    const photos = trip.memories.filter((memory) => memory.kind !== 'note').length;
+    const photos = trip.mediaCount ?? trip.memories.filter((memory) => memory.kind !== 'note').length;
     const tail = photos > 0 ? ` · ${photos} ricordi` : '';
     return `${monthYear(trip.startDate)} · ${trip.totalDays} giorni${tail}`;
   }

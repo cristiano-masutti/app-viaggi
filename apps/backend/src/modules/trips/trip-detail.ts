@@ -13,6 +13,16 @@ export const visibleMediaWhere = (userId: string): Prisma.MemoryWhereInput => ({
 
 const withDocument = { include: { document: true } } as const;
 
+/**
+ * La crew nell'ordine in cui la mostra il client: coordinatori per primi, poi
+ * per data di ingresso. L'ordine è totale (a parità di istante decide l'id),
+ * così la stessa crew non cambia ordine da una richiesta all'altra.
+ */
+export const crewInclude = {
+  include: { user: { select: memberUserSelect } },
+  orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }, { userId: 'asc' }],
+} as const satisfies Prisma.Trip$membersArgs;
+
 const docOf = (slot: { document: Document | null } | null) =>
   slot?.document ? toDocumentDto(slot.document) : null;
 
@@ -26,12 +36,7 @@ export async function loadTripDetail(prisma: PrismaClient, tripId: string, userI
     prisma.trip.findUniqueOrThrow({
       where: { id: tripId },
       include: {
-        // Ordini sempre totali: a parità di istante decide un secondo criterio,
-        // così la stessa crew non cambia ordine da una richiesta all'altra.
-        members: {
-          include: { user: { select: memberUserSelect } },
-          orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }, { userId: 'asc' }],
-        },
+        members: crewInclude,
         invitations: { where: { acceptedAt: null }, orderBy: [{ createdAt: 'asc' }, { name: 'asc' }] },
         stays: withDocument,
         activities: { ...withDocument, orderBy: [{ dayIndex: 'asc' }, { position: 'asc' }] },

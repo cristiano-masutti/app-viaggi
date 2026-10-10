@@ -6,15 +6,16 @@ import { AppError } from '../../lib/errors.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { removeStoredFiles } from '../../storage/cleanup.js';
 import { crewRoutes } from '../crew/crew.routes.js';
+import { toMemberDto } from '../crew/crew.schemas.js';
 import { documentRoutes } from '../documents/documents.routes.js';
 import { itineraryRoutes } from '../itinerary/itinerary.routes.js';
 import { logisticsRoutes } from '../logistics/logistics.routes.js';
 import { memoryRoutes } from '../memories/memories.routes.js';
 import { assertValidDates, countDays } from './days.js';
 import { generateInviteCode } from './invite-code.js';
-import { COORDINATOR_ONLY, TripParams, tripScope } from './trip-access.js';
+import { COORDINATOR_ONLY, MEMBERS_AND_STAFF, TripParams, tripScope } from './trip-access.js';
+import { crewInclude, loadTripDetail, visibleMediaWhere } from './trip-detail.js';
 import { lockTrip, seatsTaken } from './trip-lock.js';
-import { loadTripDetail, visibleMediaWhere } from './trip-detail.js';
 import { CreateTripBody, TripDetailResponse, TripSummaryDto, UpdateTripBody } from './trips.schemas.js';
 
 export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -29,7 +30,13 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
         include: {
           trip: {
             include: {
-              _count: { select: { members: true, memories: { where: visibleMediaWhere(userId) } } },
+              members: crewInclude,
+              _count: {
+                select: {
+                  invitations: { where: { acceptedAt: null } },
+                  memories: { where: visibleMediaWhere(userId) },
+                },
+              },
             },
           },
         },
@@ -37,11 +44,12 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       return {
-        trips: memberships.map(({ role, trip: { _count, ...trip } }) => ({
+        trips: memberships.map(({ role, trip: { _count, members, ...trip } }) => ({
           ...trip,
           totalDays: countDays(trip.startDate, trip.endDate),
           myRole: role,
-          crewCount: _count.members,
+          crew: members.map(toMemberDto),
+          pendingInvitations: _count.invitations,
           mediaCount: _count.memories,
         })),
       };
@@ -76,9 +84,9 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
 
     trips.get(
       '/trips/:tripId',
-      { schema: { params: TripParams, response: { 200: TripDetailResponse } } },
+      { config: MEMBERS_AND_STAFF, schema: { params: TripParams, response: { 200: TripDetailResponse } } },
       async (request) => ({
-        trip: await loadTripDetail(app.prisma, request.trip.id, request.user.id, request.tripMember.role),
+        trip: await loadTripDetail(app.prisma, request.trip.id, request.user.id, request.tripRole),
       }),
     );
 
@@ -129,7 +137,7 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
         });
 
         return {
-          trip: await loadTripDetail(app.prisma, tripId, request.user.id, request.tripMember.role),
+          trip: await loadTripDetail(app.prisma, tripId, request.user.id, request.tripRole),
         };
       },
     );

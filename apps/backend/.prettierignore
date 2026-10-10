@@ -4,3 +4,5 @@ src/generated/
 package-lock.json
 # Le tabelle dei README restano compatte, come nel resto del repo.
 *.md
+# Generato da `npm run openapi`: il test di allineamento lo confronta byte per byte.
+openapi.json

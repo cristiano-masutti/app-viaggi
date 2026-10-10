@@ -5,14 +5,17 @@ import { describe, expect, it } from 'vitest';
 import { createTestApp } from '../helpers/app.js';
 import { asUser } from '../helpers/client.js';
 import { prisma } from '../helpers/db.js';
-import { createDocument, createMemory, createTripWithCrew } from '../helpers/factories.js';
+import { createDocument, createMemory, createTripWithCrew, createUser } from '../helpers/factories.js';
 import { PDF } from '../helpers/files.js';
 
-type Who = 'coordinator' | 'traveller' | 'outsider';
+type Who = 'coordinator' | 'traveller' | 'outsider' | 'staff';
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 const MEMBERS: Who[] = ['coordinator', 'traveller'];
-const COORDINATOR: Who[] = ['coordinator'];
+/** Lo staff (pannello di controllo) non è nella crew, ma organizza come un coordinatore. */
+const COORDINATOR: Who[] = ['coordinator', 'staff'];
+/** Le letture che servono anche allo staff: il viaggio e i suoi documenti, mai i ricordi. */
+const MEMBERS_AND_STAFF: Who[] = ['coordinator', 'traveller', 'staff'];
 /** I ricordi della fixture sono del viaggiatore: solo lui può modificarli. */
 const AUTHOR: Who[] = ['traveller'];
 
@@ -22,7 +25,7 @@ const AUTHOR: Who[] = ['traveller'];
  * aggiunge deve decidere, per iscritto, chi può chiamarla.
  */
 const TRIP_ROUTES: Array<{ method: Method; url: string; allowed: Who[]; payload?: object }> = [
-  { method: 'GET', url: '/api/trips/:tripId', allowed: MEMBERS },
+  { method: 'GET', url: '/api/trips/:tripId', allowed: MEMBERS_AND_STAFF },
   { method: 'PATCH', url: '/api/trips/:tripId', allowed: COORDINATOR },
   { method: 'DELETE', url: '/api/trips/:tripId', allowed: COORDINATOR },
 
@@ -34,7 +37,7 @@ const TRIP_ROUTES: Array<{ method: Method; url: string; allowed: Who[]; payload?
   { method: 'POST', url: '/api/trips/:tripId/invite-code', allowed: COORDINATOR },
 
   { method: 'POST', url: '/api/trips/:tripId/documents', allowed: COORDINATOR },
-  { method: 'GET', url: '/api/trips/:tripId/documents/:documentId/url', allowed: MEMBERS },
+  { method: 'GET', url: '/api/trips/:tripId/documents/:documentId/url', allowed: MEMBERS_AND_STAFF },
   { method: 'DELETE', url: '/api/trips/:tripId/documents/:documentId', allowed: COORDINATOR },
 
   { method: 'PUT', url: '/api/trips/:tripId/days/:day/stay', allowed: COORDINATOR },
@@ -72,12 +75,18 @@ const EXPECTED_DENIAL: Record<Who, number> = {
   traveller: 403,
   // Chi non è nel viaggio non deve nemmeno scoprire che esiste.
   outsider: 404,
+  // Sulle route della crew (ricordi, uscita) lo staff è un estraneo come gli altri.
+  staff: 404,
 };
 
 /** Un viaggio con almeno una cosa per tipo, così ogni route ha qualcosa su cui agire. */
 async function setup() {
   const { app, routes, storage } = await createTestApp();
-  const crew = await createTripWithCrew();
+  const base = await createTripWithCrew();
+  const crew = {
+    ...base,
+    staff: await createUser({ firstName: 'Giulia', lastName: 'Staff', isAdmin: true }),
+  };
   const tripId = crew.trip.id;
 
   const document = await createDocument(tripId);
@@ -124,7 +133,7 @@ describe('trip access matrix', () => {
   });
 
   for (const route of TRIP_ROUTES) {
-    for (const who of ['coordinator', 'traveller', 'outsider'] as const) {
+    for (const who of ['coordinator', 'traveller', 'outsider', 'staff'] as const) {
       const allowed = route.allowed.includes(who);
 
       it(`${route.method} ${route.url}: ${who} is ${allowed ? 'allowed' : 'denied'}`, async () => {
@@ -166,5 +175,36 @@ describe('trip access matrix', () => {
     expect(response.json()).toEqual({
       error: { code: 'FORBIDDEN', message: 'This action requires one of the roles: coordinator' },
     });
+  });
+
+  it('lets staff organise as a coordinator, and stops the moment the role is revoked', async () => {
+    const { app, crew, url } = await setup();
+    const staff = await asUser(app, crew.staff);
+
+    const trip = await staff.get(url('/api/trips/:tripId'));
+    expect(trip.statusCode).toBe(200);
+    expect(trip.json().trip.myRole).toBe('coordinator');
+    // Lo staff organizza senza entrare nella crew.
+    expect(trip.json().trip.crew.map((member: { userId: string }) => member.userId)).not.toContain(
+      crew.staff.id,
+    );
+
+    await prisma.user.update({ where: { id: crew.staff.id }, data: { isAdmin: false } });
+    expect((await staff.get(url('/api/trips/:tripId'))).statusCode).toBe(404);
+  });
+
+  it('gives staff who travel as travellers the powers of a coordinator on the organisation', async () => {
+    const { app, crew, url } = await setup();
+    await prisma.user.update({ where: { id: crew.traveller.id }, data: { isAdmin: true } });
+    const api = await asUser(app, crew.traveller);
+
+    const response = await api.put(url('/api/trips/:tripId/insurance'), {
+      company: 'Europ Assistance',
+      policy: 'VM-2',
+    });
+
+    expect(response.statusCode).toBe(200);
+    // Nella crew resta quello che è: l'app gli mostra il viaggio da viaggiatore.
+    expect((await api.get(url('/api/trips/:tripId'))).json().trip.myRole).toBe('traveller');
   });
 });

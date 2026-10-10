@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { z } from 'zod';
 
 import { isoDateTime } from '../../lib/schemas.js';
@@ -53,7 +55,17 @@ export const PassportDto = z.object({
   number: z.string().nullable(),
   expiry: z.string().nullable(),
   hasPhoto: z.boolean(),
+  /**
+   * Cambia a ogni nuova scansione, `null` senza foto. Il client lo usa per
+   * capire che la copia salvata sul telefono è vecchia: l'URL della foto, da
+   * solo, è sempre lo stesso.
+   */
+  photoVersion: z.string().nullable(),
 });
+
+/** Opaca: dal percorso nel bucket, senza rivelarlo. */
+const photoVersionOf = (storagePath: string) =>
+  createHash('sha256').update(storagePath).digest('hex').slice(0, 16);
 
 export const ProfileDto = z.object({
   id: z.uuid(),
@@ -79,5 +91,6 @@ export const toPassportDto = (user: {
         number: user.passportNumber,
         expiry: user.passportExpiry,
         hasPhoto: user.passportPhotoPath !== null,
+        photoVersion: user.passportPhotoPath ? photoVersionOf(user.passportPhotoPath) : null,
       }
     : null;

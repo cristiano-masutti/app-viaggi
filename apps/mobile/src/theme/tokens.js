@@ -37,5 +37,7 @@ module.exports = {
   /** Stati. */
   live: '#22C55E',
   success: '#4ADEA8',
+  /** "Da controllare": passaporti in scadenza, viaggi quasi pieni (pannello di controllo). */
+  warning: '#FBBF24',
   danger: '#F87171',
 };

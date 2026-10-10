@@ -23,11 +23,14 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:check": "prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
     "prisma:studio": "prisma studio",
-    "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build"
+    "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build",
+    "staff": "tsx scripts/staff-cli.ts",
+    "openapi": "tsx scripts/openapi.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.1",
     "@fastify/multipart": "^10.1.3",
+    "@fastify/swagger": "^9.9.2",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@supabase/supabase-js": "^2.117.3",

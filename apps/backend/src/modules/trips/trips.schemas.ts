@@ -14,11 +14,11 @@ import {
 import { PassportDto } from '../me/me.schemas.js';
 import { countDays, MAX_TRIP_DAYS } from './days.js';
 
-const Title = z.string().trim().min(2).max(120);
-const Destination = z.string().trim().min(2).max(120);
-const CrewCapacity = z.number().int().min(1).max(200);
+export const Title = z.string().trim().min(2).max(120);
+export const Destination = z.string().trim().min(2).max(120);
+export const CrewCapacity = z.number().int().min(1).max(200);
 
-const validDates = <T extends { startDate: Date; endDate: Date }>(schema: z.ZodType<T>) =>
+export const validDates = <T extends { startDate: Date; endDate: Date }>(schema: z.ZodType<T>) =>
   schema
     .refine((trip) => trip.endDate >= trip.startDate, {
       path: ['endDate'],
@@ -66,6 +66,8 @@ const TripBaseDto = z.object({
   endDate: isoDate,
   totalDays: z.number().int(),
   crewCapacity: z.number().int().nullable(),
+  /** Parte finale del link `vibemakers.travel/join/<inviteCode>`. */
+  inviteCode: z.string(),
   /** Il ruolo di chi chiede: il client decide cosa mostrare come modificabile. */
   myRole: z.enum(TripRole),
   createdAt: isoDateTime,
@@ -74,7 +76,10 @@ const TripBaseDto = z.object({
 
 /** Card dell'hub "I Miei Viaggi". Lo stato (in corso, futuro, passato) lo calcola il client. */
 export const TripSummaryDto = TripBaseDto.extend({
-  crewCount: z.number().int(),
+  /** Coordinatori per primi: la card mostra il primo e gli avatar di tutti. */
+  crew: z.array(MemberDto),
+  /** Posti riservati a chi non è ancora entrato ("8 confermati su 10 posti"). */
+  pendingInvitations: z.number().int(),
   /** Foto e video che chi chiede può vedere. */
   mediaCount: z.number().int(),
 });
@@ -88,8 +93,6 @@ export const DayDto = z.object({
 
 /** Tutto il viaggio tranne i ricordi, che si leggono a pagine da `/memories`. */
 export const TripDetailDto = TripBaseDto.extend({
-  /** Parte finale del link `vibemakers.travel/join/<inviteCode>`. */
-  inviteCode: z.string(),
   crew: z.array(MemberDto),
   invitations: z.array(InvitationDto),
   days: z.array(DayDto),

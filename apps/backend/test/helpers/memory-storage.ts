@@ -38,6 +38,15 @@ export class InMemoryStorage implements ObjectStorage {
     return `https://storage.test/signed/${encodeURIComponent(path)}?expiresIn=${expiresInSeconds}`;
   }
 
+  async createSignedUrls(paths: string[], expiresInSeconds: number) {
+    this.maybeFail('createSignedUrls');
+    const urls = new Map<string, string>();
+    for (const path of paths) {
+      if (this.objects.has(path)) urls.set(path, await this.createSignedUrl(path, expiresInSeconds));
+    }
+    return urls;
+  }
+
   async remove(paths: string[]) {
     this.maybeFail('remove');
     for (const path of paths) this.objects.delete(path);

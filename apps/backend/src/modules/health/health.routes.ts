@@ -17,13 +17,14 @@ const ReadyResponse = z.object({
  *   database giù risponde 503 e il load balancer la toglie dal giro.
  */
 export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
-  app.get('/health', { schema: { response: { 200: HealthResponse } } }, async () => ({
+  // `security: []`: nella specifica OpenAPI sono le uniche route senza token.
+  app.get('/health', { schema: { security: [], response: { 200: HealthResponse } } }, async () => ({
     status: 'ok' as const,
   }));
 
   app.get(
     '/health/ready',
-    { schema: { response: { 200: ReadyResponse, 503: ReadyResponse } } },
+    { schema: { security: [], response: { 200: ReadyResponse, 503: ReadyResponse } } },
     async (request, reply) => {
       try {
         await app.prisma.$queryRaw`SELECT 1`;

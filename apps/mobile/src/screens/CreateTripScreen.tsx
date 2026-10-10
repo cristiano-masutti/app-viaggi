@@ -9,10 +9,12 @@ import { PrimaryButton } from '@/components/ui/Buttons';
 import { SectionLabel } from '@/components/ui/Card';
 import { FormField } from '@/components/ui/FormField';
 import { SmartImage } from '@/components/ui/SmartImage';
+import { useToast } from '@/components/ui/Toast';
 import { maskItalianDate, parseItalianDate, toISO } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import type { RootStackScreenProps } from '@/navigation/types';
 import { useAppActions, useProfile } from '@/store/AppStore';
+import { describeError } from '@/store/remoteActions';
 import { palette } from '@/theme/palette';
 
 const COVER_HEIGHT = 176;
@@ -28,12 +30,14 @@ const COVER_HEIGHT = 176;
 export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTrip'>) {
   const profile = useProfile();
   const { createTrip } = useAppActions();
+  const toast = useToast();
 
   const [cover, setCover] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [coordinator, setCoordinator] = useState(`${profile.firstName} ${profile.lastName}`);
+  // Un account appena creato non ha ancora un nome: il campo parte vuoto, non con uno spazio.
+  const [coordinator, setCoordinator] = useState(`${profile.firstName} ${profile.lastName}`.trim());
   const [coordinatorPhone, setCoordinatorPhone] = useState('');
   const [crewInput, setCrewInput] = useState('');
   const [crew, setCrew] = useState<string[]>([]);
@@ -77,20 +81,28 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
     setCrewInput('');
   }, [crewInput]);
 
-  const submit = useCallback(() => {
-    if (!duration) return;
-    const trip = createTrip({
-      title: title.trim(),
-      cover: cover ?? undefined,
-      startDate: toISO(duration.from),
-      endDate: toISO(duration.to),
-      coordinatorName: coordinator.trim(),
-      coordinatorPhone: coordinatorPhone.trim(),
-      crewNames: crew,
-    });
-    // `replace`: chi torna indietro dalla schermata di successo non ricade nel form.
-    navigation.replace('TripCreatedSuccess', { tripId: trip.id });
-  }, [cover, coordinator, coordinatorPhone, createTrip, crew, duration, navigation, title]);
+  const [saving, setSaving] = useState(false);
+  const submit = useCallback(async () => {
+    if (!duration || saving) return;
+    setSaving(true);
+    try {
+      const trip = await createTrip({
+        title: title.trim(),
+        cover: cover ?? undefined,
+        startDate: toISO(duration.from),
+        endDate: toISO(duration.to),
+        coordinatorName: coordinator.trim(),
+        coordinatorPhone: coordinatorPhone.trim(),
+        crewNames: crew,
+      });
+      // `replace`: chi torna indietro dalla schermata di successo non ricade nel form.
+      navigation.replace('TripCreatedSuccess', { tripId: trip.id });
+    } catch (error) {
+      // Il form resta compilato: si può riprovare senza riscrivere nulla.
+      setSaving(false);
+      toast.show(describeError('Il viaggio non è stato creato.', error));
+    }
+  }, [cover, coordinator, coordinatorPhone, createTrip, crew, duration, navigation, saving, title, toast]);
 
   return (
     <SafeAreaView className="flex-1 bg-ink-950" edges={['top', 'bottom']}>
@@ -270,7 +282,15 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
         </ScrollView>
 
         <View className="border-t border-ink-700 bg-ink-950 px-[18px] pb-2 pt-3.5">
-          <PrimaryButton label="Crea Viaggio 🚀" haptic="confirm" disabled={!canCreate} onPress={submit} />
+          <PrimaryButton
+            label="Crea Viaggio 🚀"
+            haptic="confirm"
+            disabled={!canCreate}
+            loading={saving}
+            onPress={() => {
+              void submit();
+            }}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -152,19 +152,38 @@ Senza `tripRoles` la route è aperta a ogni membro. Chi non è membro riceve
 **404**, come per un viaggio inesistente: non scopre nemmeno che esiste. Un
 membro senza il ruolo giusto riceve **403 FORBIDDEN**.
 
-| Azione | Coordinatore | Viaggiatore | Non membro |
-| --- | --- | --- | --- |
-| Vedere il viaggio, aprire i documenti | ✅ | ✅ | 404 |
-| Modificare viaggio, programma, documenti fissi | ✅ | 403 | 404 |
-| Gestire crew, posti riservati, link di invito | ✅ | 403 | 404 |
-| Cancellare il viaggio | ✅ | 403 | 404 |
-| Uscire dal viaggio | ✅ (se non è l'ultimo coordinatore) | ✅ | 404 |
-| Pubblicare ricordi e reagire | ✅ | ✅ | 404 |
-| Modificare o cancellare un ricordo | solo l'autore | solo l'autore | 404 |
+| Azione | Coordinatore | Viaggiatore | Staff | Non membro |
+| --- | --- | --- | --- | --- |
+| Vedere il viaggio, aprire i documenti | ✅ | ✅ | ✅ | 404 |
+| Modificare viaggio, programma, documenti fissi | ✅ | 403 | ✅ | 404 |
+| Gestire crew, posti riservati, link di invito | ✅ | 403 | ✅ | 404 |
+| Cancellare il viaggio | ✅ | 403 | ✅ | 404 |
+| Uscire dal viaggio | ✅ (se non è l'ultimo coordinatore) | ✅ | 404 | 404 |
+| Pubblicare ricordi e reagire | ✅ | ✅ | 404 | 404 |
+| Modificare o cancellare un ricordo | solo l'autore | solo l'autore | 404 | 404 |
 
 Chi crea un viaggio ne diventa coordinatore. La tabella vive anche in
 `test/integration/access-matrix.test.ts`: una route nuova sotto
 `/api/trips/:tripId` senza la sua riga lì fa fallire i test.
+
+**Staff (pannello di controllo).** `User.isAdmin` si concede solo da riga di
+comando, mai dall'API:
+
+```bash
+npm run staff -- grant giulia@vibemakers.it   # la persona deve aver fatto almeno un accesso
+npm run staff -- revoke giulia@vibemakers.it  # effetto immediato
+npm run staff -- list
+```
+
+Lo staff organizza qualunque viaggio come un coordinatore, senza entrare nella
+crew: le route con `COORDINATOR_ONLY` (e le due letture `MEMBERS_AND_STAFF`: il
+viaggio e i link dei documenti) lo lasciano passare con `request.tripRole =
+coordinator`. Le route della crew (ricordi, reazioni, uscita) no: foto e note
+restano di chi viaggia. Il ruolo si rilegge dal database solo quando la crew
+non basta, quindi le richieste normali non costano una query in più, e una
+revoca vale subito. Le route `/api/admin` stanno in `adminScope()`, deny by
+default come `tripScope()`, e rispondono con `Cache-Control: no-store`. Ogni
+azione dello staff finisce nei log (`Staff acting on a trip`, `Admin …`).
 
 ### Health check
 
@@ -235,8 +254,16 @@ allo schema → test con coverage → build.
 
 ## API
 
+Il contratto completo è [`openapi.json`](./openapi.json), generato da `npm run
+openapi` a partire dagli stessi schemi zod che validano le richieste: non può
+descrivere un'API diversa da quella che gira. Un test fallisce se il file non è
+aggiornato, e il mobile ne genera i suoi tipi (`apps/mobile/src/api/schema.d.ts`):
+**cambiato uno schema, `npm run openapi` e poi `npm run mobile:api-types` dalla
+root**, e `tsc` del mobile mostra cosa c'è da adattare.
+
 Tutto quello che sta sotto `/api` richiede `Authorization: Bearer <access token>`.
-`C` = coordinatore, `M` = qualunque membro, `A` = autore del ricordo.
+`C` = coordinatore o staff, `M` = qualunque membro, `A` = autore del ricordo,
+`S` = solo staff.
 Le route del viaggio iniziano tutte con `/api/trips/:tripId` (qui `…`).
 
 | Metodo | Percorso | Chi | Note |
@@ -264,16 +291,26 @@ Le route del viaggio iniziano tutte con `/api/trips/:tripId` (qui `…`).
 | `PUT` `DELETE` | `…/transports/:id` | C | sostituzione completa (documenti compresi) |
 | `PUT` `DELETE` | `…/insurance`, `…/customs` | C | |
 | `PUT` | `…/emergencies` | C | card SOS in blocco, nell'ordine dato |
-| `GET` | `…/memories` | M | `?day=&author=me\|<id>&kind=media\|note&cursor=&limit=` |
+| `GET` | `…/memories` | M | `?day=&author=me\|<id>&kind=media\|note&cursor=&limit=`; foto e video con `mediaUrl` già firmato (una sola chiamata allo storage per pagina) |
 | `POST` | `…/memories` | M | nota in JSON, foto/video in multipart |
 | `PATCH` `DELETE` | `…/memories/:id` | A | testo della nota o didascalia |
 | `PUT` `DELETE` | `…/memories/:id/reaction` | M | `fire`, `laugh`, `love`, `mindblown` |
 | `GET` | `…/memories/:id/media-url` | M | URL firmato |
+| `GET` | `/api/admin/session` | S | chi è entrato nel pannello |
+| `GET` | `/api/admin/overview` | S | viaggi per stato, persone in viaggio, posti, partenze, cosa manca (`?today=`) |
+| `GET` `POST` | `/api/admin/trips` | S | tutti i viaggi con checklist (`?status=&q=&limit=&offset=&today=`); nuovo viaggio con coordinatore scelto |
+| `GET` | `/api/admin/trips/:id` | S | crew con contatti, programma, logistica, numero dei ricordi |
+| `POST` `PATCH` `DELETE` | `/api/admin/trips/:id/members(/:userId)` | S | aggiungi (rispettando i posti), ruolo, rimozione |
+| `GET` `POST` | `/api/admin/users` | S | persone (`?q=`); nuovo account Supabase con password provvisoria, restituita una volta |
+| `GET` | `/api/admin/users/:id` | S | viaggi e stato del passaporto; mai note mediche, codice fiscale o numero |
 
 ## Variabili d'ambiente
 
 Vedi [`.env.example`](./.env.example); lo schema completo, con i default, è in
-[`src/config/env.ts`](./src/config/env.ts).
+[`src/config/env.ts`](./src/config/env.ts). Il pannello di controllo è
+un'origine web: va aggiunta a `CORS_ORIGIN` (in sviluppo
+`http://localhost:5173`). La creazione degli account usa la stessa
+`SUPABASE_SERVICE_ROLE_KEY` dello storage.
 
 ## Dipendenze: note
 
@@ -302,7 +339,6 @@ Vedi [`.env.example`](./.env.example); lo schema completo, con i default, è in
   `UPLOAD_MAX_BYTES` per tutto).
 - **Pulizia:** un job che cancelli i documenti caricati e mai collegati a uno
   slot, e i file rimasti orfani per un errore dello storage.
-- **Hardening:** rate limiting (soprattutto su `/api/invites`), OpenAPI
-  generata dagli schemi zod per il client del mobile.
+- **Hardening:** rate limiting (soprattutto su `/api/invites`).
 - **Deploy:** Dockerfile, ambiente di staging, `prisma migrate deploy` nella
   pipeline di rilascio, error tracking.
