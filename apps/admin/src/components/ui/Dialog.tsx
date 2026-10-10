@@ -37,13 +37,18 @@ export function Dialog({
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') latestClose.current();
+      if (event.key === 'Tab' && panel.current) trapFocus(event, panel.current);
     };
+    // Dietro al foglio niente è raggiungibile, né con Tab né con un lettore di schermo.
+    const root = document.getElementById('root');
+    root?.setAttribute('inert', '');
     document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
+      root?.removeAttribute('inert');
       previous?.focus();
     };
   }, [open]);
@@ -84,4 +89,30 @@ export function Dialog({
     </div>,
     document.body,
   );
+}
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Tab e Maiusc+Tab girano dentro al foglio: dall'ultimo elemento si torna al primo, e viceversa. */
+export function trapFocus(event: KeyboardEvent, container: HTMLElement) {
+  const focusable = [...container.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (element) => !element.hasAttribute('inert') && element.getAttribute('aria-hidden') !== 'true',
+  );
+  if (focusable.length === 0) {
+    event.preventDefault();
+    container.focus();
+    return;
+  }
+  const first = focusable[0]!;
+  const last = focusable[focusable.length - 1]!;
+  const active = document.activeElement;
+  const outside = !container.contains(active);
+  if (event.shiftKey && (active === first || outside)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || outside)) {
+    event.preventDefault();
+    first.focus();
+  }
 }

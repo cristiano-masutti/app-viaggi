@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  discardStoredDocument,
   OFFLINE_STORAGE_SUPPORTED,
   offlineKey,
   pruneOrphans,
@@ -85,7 +86,7 @@ export function collectTripDocuments(trip: Trip): DocumentRef[] {
 export { PROFILE_PASSPORT_DOC_ID };
 
 export function OfflineLibraryProvider({ children }: { children: React.ReactNode }) {
-  const { trips, profile } = useAppState();
+  const { trips, profile, authenticated } = useAppState();
   const resolveFileUrl = useFileUrlResolver();
   const [entries, setEntries] = useState<Record<string, OfflineEntry>>({});
 
@@ -96,6 +97,8 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
    * deduplica per id, così si scarica una volta sola.
    */
   const documents = useMemo(() => {
+    // Senza un account aperto non si scarica niente.
+    if (!authenticated) return [];
     const byId = new Map<string, DocumentRef>();
 
     trips.forEach((trip) => {
@@ -116,7 +119,7 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
     }
 
     return [...byId.values()];
-  }, [profile.passport.number, profile.passport.photoUri, trips]);
+  }, [authenticated, profile.passport.number, profile.passport.photoUri, trips]);
 
   /**
    * Documenti già presi in carico (per `offlineKey`: un file sostituito sotto
@@ -125,6 +128,8 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
   const handled = useRef(new Set<string>());
   const queue = useRef<DocumentRef[]>([]);
   const running = useRef(0);
+  /** Cambia a ogni uscita dall'account: i download partiti prima non contano più. */
+  const generation = useRef(0);
 
   const pump = useCallback(() => {
     while (running.current < CONCURRENCY && queue.current.length > 0) {
@@ -132,16 +137,23 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
       if (!doc) break;
 
       running.current += 1;
+      const started = generation.current;
       setEntries((previous) => ({ ...previous, [doc.id]: { state: 'saving' } }));
 
       saveForOffline(doc, resolveFileUrl)
         .then((stored: StoredDocument) => {
+          if (generation.current !== started) {
+            // Finito dopo il logout: il file è dell'account uscito e non deve restare.
+            discardStoredDocument(doc);
+            return;
+          }
           setEntries((previous) => ({
             ...previous,
             [doc.id]: { state: 'saved', localUri: stored.uri, bytes: stored.bytes },
           }));
         })
         .catch(() => {
+          if (generation.current !== started) return;
           // Un fallimento non è definitivo: resta visibile e riprovabile.
           handled.current.delete(offlineKey(doc));
           setEntries((previous) => ({ ...previous, [doc.id]: { state: 'failed' } }));
@@ -152,6 +164,25 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
         });
     }
   }, [resolveFileUrl]);
+
+  /**
+   * All'uscita dall'account (logout o sessione scaduta) sul telefono non resta
+   * niente: coda svuotata, download in corso ignorati, file cancellati. È ciò
+   * che promette la conferma "Esci". Non all'avvio dell'app, però: lì si parte
+   * sempre dal login, e i documenti salvati devono esserci ancora dopo.
+   */
+  const wasAuthenticated = useRef(authenticated);
+  useEffect(() => {
+    const signedOut = wasAuthenticated.current && !authenticated;
+    wasAuthenticated.current = authenticated;
+    if (!signedOut) return;
+
+    generation.current += 1;
+    queue.current = [];
+    handled.current.clear();
+    setEntries({});
+    pruneOrphans([]);
+  }, [authenticated]);
 
   useEffect(() => {
     if (documents.length === 0) return;

@@ -175,8 +175,10 @@ export function createRemoteActions({
     },
 
     createTrip: async (draft) => {
+      const started = session;
       const trip = await data.createTrip(draft);
-      dispatch({ type: 'putTrip', trip });
+      // Arrivato dopo un logout: il viaggio è dell'account uscito, non entra nello stato.
+      if (live(started)) dispatch({ type: 'putTrip', trip });
       return trip;
     },
 

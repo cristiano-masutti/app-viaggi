@@ -14,12 +14,14 @@ export const ACCEPTED_FILES = 'application/pdf,image/jpeg,image/png,image/webp';
 interface UploadOptions {
   baseUrl: string;
   getAccessToken: () => Promise<string | null>;
+  /** Come nel client tipizzato: un 401 chiude la sessione e riporta al login. */
+  onUnauthorized?: () => void;
   fetch?: typeof globalThis.fetch;
 }
 
 /** Carica un file fra i documenti del viaggio (multipart) e ne restituisce l'id. */
 export async function uploadDocument(
-  { baseUrl, getAccessToken, fetch = globalThis.fetch }: UploadOptions,
+  { baseUrl, getAccessToken, onUnauthorized, fetch = globalThis.fetch }: UploadOptions,
   tripId: string,
   file: File,
   title: string,
@@ -35,6 +37,7 @@ export async function uploadDocument(
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   });
+  if (response.status === 401) onUnauthorized?.();
   const payload = (await response.json().catch(() => ({}))) as {
     document?: { id: string };
     error?: { code?: string; message?: string };

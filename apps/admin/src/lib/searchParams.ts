@@ -13,7 +13,10 @@ export function withParams(params: URLSearchParams, changes: Record<string, stri
 }
 
 /** La pagina, 1-based nell'indirizzo e 0-based nel codice. */
-export const pageFromParams = (params: URLSearchParams) =>
-  Math.max(0, Number(params.get('pagina') ?? '1') - 1) || 0;
+export function pageFromParams(params: URLSearchParams): number {
+  // Solo interi positivi: `pagina=2.01` o `pagina=-3` portano alla prima pagina, non a un 400.
+  const raw = params.get('pagina') ?? '1';
+  return /^[1-9]\d{0,4}$/.test(raw) ? Number(raw) - 1 : 0;
+}
 export const pageParam = (page: number | undefined) =>
   page === undefined ? undefined : page > 0 ? String(page + 1) : null;
