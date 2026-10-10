@@ -1,0 +1,24 @@
+# Postgres locale per sviluppo e test: `docker compose up -d`.
+# Crea due database, `app_viaggi` (sviluppo) e `app_viaggi_test` (test, svuotato
+# a ogni esecuzione della suite). I dati restano nel volume `pgdata` finché non
+# si lancia `docker compose down -v`.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_viaggi
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/create-test-database.sql:/docker-entrypoint-initdb.d/create-test-database.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  pgdata:

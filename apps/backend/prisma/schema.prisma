@@ -1,31 +1,37 @@
 generator client {
-  provider = "prisma-client-js"
+  provider             = "prisma-client"
+  output               = "../src/generated/prisma"
+  moduleFormat         = "esm"
+  importFileExtension  = "js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Trip {
-  id          String      @id @default(uuid())
+  id          String      @id @default(uuid()) @db.Uuid
   title       String
   destination String
-  startDate   DateTime
-  endDate     DateTime
+  /// Solo data, senza orario: un viaggio è fatto di giorni.
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   assets      TripAsset[]
 }
 
+/// File caricato nello storage privato: si legge solo tramite signed URL.
 model TripAsset {
-  id           String   @id @default(uuid())
-  tripId       String
+  id           String   @id @default(uuid()) @db.Uuid
+  tripId       String   @db.Uuid
   originalName String
   mimeType     String
+  sizeBytes    Int
   storagePath  String   @unique
-  publicUrl    String?
   createdAt    DateTime @default(now())
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
 }

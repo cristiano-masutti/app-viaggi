@@ -1,0 +1,6 @@
+dist/
+coverage/
+src/generated/
+package-lock.json
+# Le tabelle dei README restano compatte, come nel resto del repo.
+*.md

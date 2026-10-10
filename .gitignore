@@ -35,6 +35,13 @@ yarn-error.*
 apps/backend/.env
 apps/backend/.env.*
 !apps/backend/.env.example
+!apps/backend/.env.test
+
+# Prisma Client generato da `prisma generate`
+apps/backend/src/generated/
+
+# coverage
+coverage/
 
 # typescript
 *.tsbuildinfo

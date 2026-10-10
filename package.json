@@ -20,10 +20,12 @@
     "mobile:typecheck": "npm --prefix apps/mobile run typecheck",
     "mobile:doctor": "npm --prefix apps/mobile run doctor",
     "backend:install": "npm --prefix apps/backend install",
+    "backend:db:up": "docker compose -f apps/backend/docker-compose.yml up -d --wait",
     "backend:dev": "npm --prefix apps/backend run dev",
     "backend:build": "npm --prefix apps/backend run build",
+    "backend:test": "npm --prefix apps/backend test",
+    "backend:verify": "npm --prefix apps/backend run verify",
     "backend:prisma:generate": "npm --prefix apps/backend run prisma:generate",
-    "backend:prisma:migrate": "npm --prefix apps/backend run prisma:migrate",
-    "backend:prisma:migrate:init": "npm --prefix apps/backend run prisma:migrate -- --name init"
+    "backend:prisma:migrate": "npm --prefix apps/backend run prisma:migrate"
   }
 }
