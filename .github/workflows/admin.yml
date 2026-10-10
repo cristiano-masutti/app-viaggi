@@ -1,0 +1,57 @@
+name: Admin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/admin/**'
+      # Il contratto dell'API e la palette condivisa con l'app.
+      - 'apps/backend/openapi.json'
+      - 'apps/mobile/src/theme/tokens.js'
+      - '.github/workflows/admin.yml'
+      - '.nvmrc'
+  pull_request:
+    paths:
+      - 'apps/admin/**'
+      - 'apps/backend/openapi.json'
+      - 'apps/mobile/src/theme/tokens.js'
+      - '.github/workflows/admin.yml'
+      - '.nvmrc'
+
+concurrency:
+  group: admin-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: apps/admin
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/admin/package-lock.json
+
+      - run: npm ci
+
+      # Se il backend ha cambiato il contratto senza che il pannello rigenerasse
+      # i tipi, qui il diff non è vuoto: `npm run api:types` e commit.
+      - name: API types match apps/backend/openapi.json
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/api/schema.d.ts
+
+      # Lint, formato, tipi, test e build di produzione, come in locale.
+      - run: npm run verify
