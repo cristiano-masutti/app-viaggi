@@ -14,6 +14,7 @@ import { ToastProvider, useToast } from '@/components/ui/Toast';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { AppProvider, useAppNotices } from '@/store/AppStore';
 import { OfflineLibraryProvider } from '@/store/OfflineLibrary';
+import { TelemetryRuntime } from '@/telemetry/TelemetryRuntime';
 import { palette } from '@/theme/palette';
 
 /**
@@ -40,6 +41,7 @@ export default function App() {
               <OfflineLibraryProvider>
                 <ToastProvider>
                   <StoreNotices />
+                  <TelemetryRuntime />
                   <StatusBar style="light" />
                   <RootNavigator />
                 </ToastProvider>

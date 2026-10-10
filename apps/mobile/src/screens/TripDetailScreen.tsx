@@ -16,6 +16,8 @@ import { DocumentViewerModal } from '@/components/viewers/DocumentViewerModal';
 import { PhotoViewerModal } from '@/components/viewers/PhotoViewerModal';
 import { defaultDayId, photoMemories, tripBadge } from '@/lib/trip';
 import { useHeaderScroll } from '@/lib/useHeaderScroll';
+import { telemetry } from '@/telemetry';
+import { useScreenReady } from '@/telemetry/useScreenReady';
 import type { RootStackScreenProps } from '@/navigation/types';
 import { useAppActions, useProfile, useTrip, useTripLoaded } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
@@ -39,6 +41,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
   const { tripId } = route.params;
   const trip = useTrip(tripId);
   const loaded = useTripLoaded(tripId);
+  useScreenReady('TripDetail', !!trip && loaded);
   const profile = useProfile();
   const actions = useAppActions();
   const toast = useToast();
@@ -303,7 +306,10 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
           bottomPadding={bottomPadding}
           scrollRef={activeScroll.scrollRef}
           onEdit={setEditing}
-          onOpenDoc={setViewerDoc}
+          onOpenDoc={(doc) => {
+            telemetry.event('document_open', { tripId });
+            setViewerDoc(doc);
+          }}
         />
       )}
 

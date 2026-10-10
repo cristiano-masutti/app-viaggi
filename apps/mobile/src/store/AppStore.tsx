@@ -5,6 +5,8 @@ import { useAuth } from '@/auth/AuthProvider';
 import { backendConfig } from '@/config';
 import { secureLocalPrefs } from '@/data/localPrefs';
 import { createRemoteData } from '@/data/remote';
+import { telemetry } from '@/telemetry';
+import { apiTimingMiddleware } from '@/telemetry/apiTiming';
 import { ME } from '@/mock/trips';
 import type { Trip } from '@/types';
 
@@ -64,7 +66,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Token scaduto o revocato: si torna al login.
       onUnauthorized: () => actions.sessionExpired(),
     };
-    const data = createRemoteData(createApiClient(options), options);
+    const client = createApiClient(options);
+    client.use(apiTimingMiddleware(telemetry));
+    const data = createRemoteData(client, options);
+    telemetry.connect(async (batch) => {
+      // Senza sessione non si manda: i campioni aspettano il prossimo accesso.
+      if (!(await options.getAccessToken())) return 'failed';
+      const { response } = await client.POST('/api/telemetry', { body: batch });
+      if (response.ok) return 'ok';
+      // Un lotto non valido non passerà mai: si scarta. Rete, server o sessione: si riprova.
+      return response.status >= 400 && response.status < 500 && ![401, 408, 429].includes(response.status)
+        ? 'rejected'
+        : 'failed';
+    });
     const actions: RemoteActions = createRemoteActions({
       data,
       dispatch,

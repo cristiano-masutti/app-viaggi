@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthError, useAuth } from '@/auth/AuthProvider';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useAppActions } from '@/store/AppStore';
+import { markAppReady } from '@/telemetry';
 import { palette } from '@/theme/palette';
 
 const LOGIN_HERO_IMAGE = require('../../assets/login-hero.png');
@@ -79,6 +80,9 @@ export function LoginScreen() {
       setError('Sblocco rapido non riuscito. Usa le credenziali.');
     }
   }, [signIn]);
+
+  // Il login è la prima schermata: chiude il tempo di avvio.
+  useEffect(() => markAppReady('Login'), []);
 
   // Lo Sblocco Rapido compare solo se c'è hardware, un'impronta/volto registrato
   // e una sessione salvata: altrimenti è un bottone che non può funzionare.

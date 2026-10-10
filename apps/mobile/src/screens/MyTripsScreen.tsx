@@ -10,6 +10,7 @@ import { DashedPlaceholder } from '@/components/ui/DashedPlaceholder';
 import { HeaderIconButton, ScreenHeader } from '@/components/ui/ScreenHeader';
 import { TripCardSkeleton } from '@/components/ui/Skeleton';
 import { useHeaderScroll } from '@/lib/useHeaderScroll';
+import { useScreenReady } from '@/telemetry/useScreenReady';
 import { HUB_SUBTITLES } from '@/lib/trip';
 import { TAB_BAR_SPACE } from '@/navigation/FloatingTabBar';
 import type { MainTabScreenProps } from '@/navigation/types';
@@ -45,6 +46,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
     return () => clearTimeout(timer);
   }, [remote]);
   const booting = remote ? tripsStatus === 'idle' || tripsStatus === 'loading' : mockBooting;
+  useScreenReady('MyTrips', !booting);
 
   // Al ritorno sull'hub (da un viaggio, dal profilo) le card si riallineano al
   // server: nuovi compagni, ricordi degli altri. Il primo ingresso no, lo fa il login.
