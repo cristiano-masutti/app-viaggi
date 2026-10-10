@@ -43,6 +43,30 @@ describe('uploadDocument', () => {
     expect((form.get('file') as File).name).toBe('voucher.pdf');
   });
 
+  it('closes the session when the token has expired, like the typed client', async () => {
+    const onUnauthorized = vi.fn();
+    const fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: { code: 'INVALID_TOKEN', message: 'expired' } }), {
+          status: 401,
+        }),
+    );
+    const upload = uploadDocument(
+      {
+        baseUrl: 'https://api.test',
+        getAccessToken: async () => 'old',
+        onUnauthorized,
+        fetch: fetch,
+      },
+      'trip-1',
+      new File(['%PDF'], 'voucher.pdf', { type: 'application/pdf' }),
+      'Voucher',
+    );
+
+    await expect(upload).rejects.toMatchObject({ status: 401 });
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
   it('reports the reason when the server refuses the file', async () => {
     const fetch = vi.fn(
       async () =>

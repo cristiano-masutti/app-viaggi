@@ -568,6 +568,26 @@ describe('creating an account', () => {
     expect(await prisma.user.count({ where: { email: 'nina@example.test' } })).toBe(0);
   });
 
+  it('undoes the Supabase account when saving it here fails, so the staff can retry', async () => {
+    const { prisma: realPrisma } = await import('../helpers/db.js');
+    const failingUsers = Object.create(realPrisma.user, {
+      upsert: { value: () => Promise.reject(new Error('connection lost')) },
+    }) as typeof realPrisma.user;
+    const brokenPrisma = Object.create(realPrisma, { user: { value: failingUsers } }) as typeof realPrisma;
+    const { app, accountAdmin } = await createTestApp({ prisma: brokenPrisma });
+    const admin = await createAdmin();
+    const api = await asUser(app, admin);
+
+    const response = await api.post('/api/admin/users', {
+      email: 'nina@example.test',
+      firstName: 'Nina',
+      lastName: 'R',
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(accountAdmin.accounts.has('nina@example.test')).toBe(false);
+  });
+
   it('validates the input', async () => {
     const { api } = await asAdmin();
     const response = await api.post('/api/admin/users', {

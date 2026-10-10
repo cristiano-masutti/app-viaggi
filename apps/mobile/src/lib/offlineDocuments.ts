@@ -153,14 +153,28 @@ export function removeOffline(doc: DocumentRef): void {
 }
 
 /**
+ * Toglie dal disco la copia di un documento. Serve a un download finito dopo
+ * il logout: il file appena scritto è dell'account che è uscito.
+ */
+export function discardStoredDocument(doc: DocumentRef): void {
+  if (!OFFLINE_STORAGE_SUPPORTED) return;
+  try {
+    const file = fileFor(doc);
+    if (file.exists) file.delete();
+  } catch {
+    // Se non si cancella ora, lo toglie la prossima pulizia degli orfani.
+  }
+}
+
+/**
  * Cancella le copie locali che non corrispondono più a nessun documento.
  *
  * Senza questo passaggio ogni voucher sostituito lascerebbe il suo file sul
  * telefono per sempre: dopo qualche viaggio sarebbero centinaia di megabyte che
  * l'utente non sa di avere e non può cancellare da nessuna parte.
  *
- * Il nome del file è `<id>.<ext>`, quindi basta confrontare i nomi con gli id
- * ancora vivi: nessun registro da tenere allineato.
+ * Il nome del file è `<offlineKey>.<ext>`, quindi basta confrontare i nomi con
+ * i documenti ancora vivi: nessun registro da tenere allineato.
  */
 export function pruneOrphans(documents: DocumentRef[]): number {
   if (!OFFLINE_STORAGE_SUPPORTED) return 0;

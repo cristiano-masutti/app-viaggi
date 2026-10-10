@@ -184,12 +184,25 @@ export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
         throw error;
       }
 
-      const user = await app.prisma.user.upsert({
-        where: { id: account.id },
-        create: { id: account.id, email: account.email, firstName, lastName },
-        update: { firstName, lastName },
-        select: userSelect,
-      });
+      let user;
+      try {
+        user = await app.prisma.user.upsert({
+          where: { id: account.id },
+          create: { id: account.id, email: account.email, firstName, lastName },
+          update: { firstName, lastName },
+          select: userSelect,
+        });
+      } catch (error) {
+        // L'account su Supabase esiste già: senza la riga qui, ogni nuovo tentativo
+        // direbbe "email già usata". Si annulla, così lo staff può riprovare.
+        await app.accountAdmin.deleteAccount(account.id).catch((cleanup: unknown) => {
+          request.log.error(
+            { err: cleanup, accountId: account.id },
+            'Orphan Supabase account: delete it by hand before retrying',
+          );
+        });
+        throw error;
+      }
 
       request.log.info({ adminId: request.user.id, userId: user.id }, 'Admin created an account');
       return reply.status(201).send({ user: toAdminUser(user), temporaryPassword });

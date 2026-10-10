@@ -23,4 +23,8 @@ export class InMemoryAccountAdmin implements AccountAdmin {
     this.accounts.set(account.email, { ...account, id });
     return { id, email: account.email };
   }
+
+  async deleteAccount(id: string) {
+    for (const [email, account] of this.accounts) if (account.id === id) this.accounts.delete(email);
+  }
 }

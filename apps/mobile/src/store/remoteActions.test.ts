@@ -378,6 +378,28 @@ describe('profile', () => {
 });
 
 describe('creating a trip', () => {
+  it('does not put a trip created by the previous account into the new session', async () => {
+    const { actions, state, data } = setup({ authenticated: false });
+    let release!: (trip: Trip) => void;
+    data.createTrip.mockImplementationOnce(() => new Promise<Trip>((resolve) => (release = resolve)));
+
+    actions.signIn();
+    const creating = actions.createTrip({
+      title: 'Giappone',
+      startDate: '2026-11-01',
+      endDate: '2026-11-12',
+      coordinatorName: 'Sofia',
+      coordinatorPhone: '',
+      crewNames: [],
+    });
+    actions.signOut();
+    actions.signIn();
+    release(tripFixture({ id: '66666666-6666-4666-8666-666666666666' }));
+    await creating;
+
+    expect(state().trips.map((trip) => trip.id)).not.toContain('66666666-6666-4666-8666-666666666666');
+  });
+
   it('adds the trip the server created and returns it', async () => {
     const { actions, state } = setup();
 

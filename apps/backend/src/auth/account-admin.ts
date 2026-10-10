@@ -17,6 +17,8 @@ export interface NewAccount {
 export interface AccountAdmin {
   /** Crea l'account su Supabase Auth, con l'email già confermata. */
   createAccount(account: NewAccount): Promise<{ id: string; email: string }>;
+  /** Cancella un account appena creato, se il resto della creazione non è andato in porto. */
+  deleteAccount(id: string): Promise<void>;
 }
 
 export class AccountExistsError extends Error {
@@ -60,6 +62,11 @@ export function createSupabaseAccountAdmin({
         throw new AccountAdminError(error.message, { cause: error });
       }
       return { id: data.user.id, email: data.user.email ?? email };
+    },
+
+    async deleteAccount(id) {
+      const { error } = await client.auth.admin.deleteUser(id);
+      if (error) throw new AccountAdminError(error.message, { cause: error });
     },
   };
 }

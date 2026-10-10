@@ -18,22 +18,20 @@ export function ApiProvider({ baseUrl, children }: { baseUrl: string; children: 
   const { getAccessToken, signOut } = useAuth();
   const queryClient = useQueryClient();
 
+  const onUnauthorized = useCallback(() => {
+    queryClient.clear();
+    void signOut();
+  }, [queryClient, signOut]);
+
   const client = useMemo(
-    () =>
-      createApiClient({
-        baseUrl,
-        getAccessToken,
-        onUnauthorized: () => {
-          queryClient.clear();
-          void signOut();
-        },
-      }),
-    [baseUrl, getAccessToken, queryClient, signOut],
+    () => createApiClient({ baseUrl, getAccessToken, onUnauthorized }),
+    [baseUrl, getAccessToken, onUnauthorized],
   );
+  // Anche l'upload multipart, fuori dal client tipizzato, chiude la sessione su un 401.
   const upload = useCallback(
     (tripId: string, file: File, title: string) =>
-      uploadDocument({ baseUrl, getAccessToken }, tripId, file, title),
-    [baseUrl, getAccessToken],
+      uploadDocument({ baseUrl, getAccessToken, onUnauthorized }, tripId, file, title),
+    [baseUrl, getAccessToken, onUnauthorized],
   );
   const value = useMemo(() => ({ client, upload }), [client, upload]);
 
