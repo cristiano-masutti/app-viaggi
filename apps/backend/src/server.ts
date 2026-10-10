@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 import { buildApp } from './app.js';
+import { createSupabaseTokenVerifier } from './auth/token-verifier.js';
 import { loadConfig } from './config/env.js';
 import { createPrismaClient } from './lib/prisma.js';
 import { createSupabaseStorage } from './storage/supabase-storage.js';
@@ -16,7 +17,9 @@ const storage = createSupabaseStorage({
   bucket: config.SUPABASE_STORAGE_BUCKET,
 });
 
-const app = await buildApp({ config, prisma, storage });
+const tokenVerifier = createSupabaseTokenVerifier(config.SUPABASE_URL);
+
+const app = await buildApp({ config, prisma, storage, tokenVerifier });
 app.addHook('onClose', async () => {
   await prisma.$disconnect();
 });

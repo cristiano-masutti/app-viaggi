@@ -4,8 +4,10 @@ import path from 'node:path';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
+import { TripRole } from '../../generated/prisma/enums.js';
 import { AppError, badRequest, notFound } from '../../lib/errors.js';
-import { AssetDto, AssetParams, SignedUrlDto, UploadQuery } from './uploads.schemas.js';
+import { TripParams } from '../trips/trip-access.js';
+import { AssetDto, AssetParams, SignedUrlDto } from './assets.schemas.js';
 
 const MAX_ORIGINAL_NAME_LENGTH = 255;
 
@@ -15,21 +17,24 @@ const safeExtension = (filename: string) => {
   return /^\.[a-z0-9]{1,10}$/.test(extension) ? extension : '';
 };
 
-export const uploadRoutes: FastifyPluginAsyncZod = async (app) => {
+/**
+ * File del viaggio (voucher, biglietti, polizze). Vive dentro `tripScope`:
+ * quando un handler parte, l'utente è già membro del viaggio con un ruolo ammesso.
+ */
+export const assetRoutes: FastifyPluginAsyncZod = async (app) => {
+  /** Caricare documenti è organizzare il viaggio: lo fa il coordinatore. */
   app.post(
-    '/uploads',
-    { schema: { querystring: UploadQuery, response: { 201: z.object({ asset: AssetDto }) } } },
+    '/trips/:tripId/assets',
+    {
+      config: { tripRoles: [TripRole.COORDINATOR] },
+      schema: { params: TripParams, response: { 201: z.object({ asset: AssetDto }) } },
+    },
     async (request, reply) => {
       if (!request.isMultipart()) {
         throw new AppError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Expected a multipart/form-data request');
       }
 
-      const trip = await app.prisma.trip.findUnique({
-        where: { id: request.query.tripId },
-        select: { id: true },
-      });
-      if (!trip) throw notFound('Trip');
-
+      const { tripId } = request.params;
       const file = await request.file();
       if (!file) throw badRequest('FILE_REQUIRED', 'A multipart file field is required');
 
@@ -37,13 +42,14 @@ export const uploadRoutes: FastifyPluginAsyncZod = async (app) => {
       const bytes = await file.toBuffer();
       if (bytes.length === 0) throw badRequest('EMPTY_FILE', 'The uploaded file is empty');
 
-      const storagePath = `trips/${trip.id}/${crypto.randomUUID()}${safeExtension(file.filename)}`;
+      const storagePath = `trips/${tripId}/${crypto.randomUUID()}${safeExtension(file.filename)}`;
       await app.storage.upload(storagePath, bytes, file.mimetype);
 
       try {
         const asset = await app.prisma.tripAsset.create({
           data: {
-            tripId: trip.id,
+            tripId,
+            uploadedById: request.user.id,
             originalName: (file.filename || 'file').slice(0, MAX_ORIGINAL_NAME_LENGTH),
             mimeType: file.mimetype,
             sizeBytes: bytes.length,
@@ -63,11 +69,15 @@ export const uploadRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get(
-    '/uploads/:assetId/signed-url',
+    '/trips/:tripId/assets/:assetId/signed-url',
     { schema: { params: AssetParams, response: { 200: SignedUrlDto } } },
     async (request) => {
-      const asset = await app.prisma.tripAsset.findUnique({
-        where: { id: request.params.assetId },
+      const { tripId, assetId } = request.params;
+
+      // Il filtro su tripId è il controllo d'accesso: un asset di un altro
+      // viaggio, anche se l'id è giusto, qui non esiste.
+      const asset = await app.prisma.tripAsset.findFirst({
+        where: { id: assetId, tripId },
         select: { id: true, storagePath: true },
       });
       if (!asset) throw notFound('Asset');

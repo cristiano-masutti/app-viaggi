@@ -20,22 +20,40 @@ export interface ErrorBody {
   };
 }
 
+interface AppErrorOptions {
+  details?: unknown;
+  /** Header da aggiungere alla risposta d'errore (es. `WWW-Authenticate` sui 401). */
+  headers?: Record<string, string>;
+  cause?: unknown;
+}
+
 export class AppError extends Error {
+  readonly details?: unknown;
+  readonly headers?: Record<string, string>;
+
   constructor(
     readonly statusCode: number,
     readonly code: string,
     message: string,
-    readonly details?: unknown,
+    { details, headers, cause }: AppErrorOptions = {},
   ) {
-    super(message);
+    super(message, { cause });
     this.name = 'AppError';
+    this.details = details;
+    this.headers = headers;
   }
 }
 
+/**
+ * Anche "esiste ma non è tuo" risponde 404: a chi non fa parte di un viaggio
+ * non si conferma nemmeno che quell'id esista.
+ */
 export const notFound = (resource: string) => new AppError(404, 'NOT_FOUND', `${resource} not found`);
 
+export const forbidden = (message: string) => new AppError(403, 'FORBIDDEN', message);
+
 export const badRequest = (code: string, message: string, details?: unknown) =>
-  new AppError(400, code, message, details);
+  new AppError(400, code, message, { details });
 
 const errorBody = (code: string, message: string, details?: unknown): ErrorBody => ({
   error: details === undefined ? { code, message } : { code, message, details },
@@ -67,6 +85,7 @@ export function registerErrorHandling(app: FastifyInstance) {
   app.setErrorHandler<FastifyError | AppError | StorageError>((error, request, reply) => {
     if (error instanceof AppError) {
       if (error.statusCode >= 500) request.log.error({ err: error }, error.message);
+      if (error.headers) reply.headers(error.headers);
       return reply.status(error.statusCode).send(errorBody(error.code, error.message, error.details));
     }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PrismaClient } from '../../src/lib/prisma.js';
 import { createTestApp } from '../helpers/app.js';
+import { authHeaders, newAuthUser } from '../helpers/auth.js';
 import { prisma } from '../helpers/db.js';
 
 describe('error envelope', () => {
@@ -22,7 +23,7 @@ describe('error envelope', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/trips',
-      headers: { 'content-type': 'application/json' },
+      headers: { ...(await authHeaders(newAuthUser())), 'content-type': 'application/json' },
       payload: '{"title": ',
     });
 
@@ -32,7 +33,7 @@ describe('error envelope', () => {
 
   it('hides the details of an unexpected error behind a generic 500', async () => {
     const brokenPrisma = Object.create(prisma, {
-      trip: {
+      tripMember: {
         value: {
           findMany: () => Promise.reject(new Error('connection terminated: db.internal:5432')),
         },
@@ -40,7 +41,11 @@ describe('error envelope', () => {
     }) as PrismaClient;
     const { app } = await createTestApp({ prisma: brokenPrisma });
 
-    const response = await app.inject({ method: 'GET', url: '/api/trips' });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/trips',
+      headers: await authHeaders(newAuthUser()),
+    });
 
     expect(response.statusCode).toBe(500);
     expect(response.json()).toEqual({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });

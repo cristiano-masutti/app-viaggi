@@ -9,29 +9,67 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Utente dell'app. L'id è quello di Supabase Auth (claim `sub`): la riga nasce
+/// alla prima richiesta autenticata, senza una registrazione separata.
+model User {
+  id             String       @id @db.Uuid
+  /// Copia di cortesia: la fonte di verità è Supabase. Può mancare (login via telefono).
+  email          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  memberships    TripMember[]
+  uploadedAssets TripAsset[]
+}
+
 model Trip {
-  id          String      @id @default(uuid()) @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
   title       String
   destination String
   /// Solo data, senza orario: un viaggio è fatto di giorni.
-  startDate   DateTime    @db.Date
-  endDate     DateTime    @db.Date
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  startDate   DateTime     @db.Date
+  endDate     DateTime     @db.Date
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     TripMember[]
   assets      TripAsset[]
+}
+
+enum TripRole {
+  /// Organizza il viaggio: modifica programma e documenti.
+  COORDINATOR
+  /// Partecipa: vede tutto, non modifica l'organizzazione.
+  TRAVELLER
+}
+
+/// Chi fa parte di un viaggio e con quale ruolo. È l'unica fonte dei permessi:
+/// senza una riga qui un utente non vede nemmeno che il viaggio esiste.
+model TripMember {
+  tripId   String   @db.Uuid
+  userId   String   @db.Uuid
+  role     TripRole
+  joinedAt DateTime @default(now())
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, userId])
+  @@index([userId])
 }
 
 /// File caricato nello storage privato: si legge solo tramite signed URL.
 model TripAsset {
   id           String   @id @default(uuid()) @db.Uuid
   tripId       String   @db.Uuid
+  /// `null` se l'utente che l'ha caricato è stato cancellato: il file resta al viaggio.
+  uploadedById String?  @db.Uuid
   originalName String
   mimeType     String
   sizeBytes    Int
   storagePath  String   @unique
   createdAt    DateTime @default(now())
 
-  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip       Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  uploadedBy User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
   @@index([tripId])
 }
