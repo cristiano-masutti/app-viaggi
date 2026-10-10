@@ -195,6 +195,25 @@ describe('GET memories', () => {
     expect(seen).toEqual(all.map((memory) => memory.id));
   });
 
+  it('signs the media of a page with one storage call, and still lists it if the storage is down', async () => {
+    const { as, base, trip, coordinator, storage } = await setup();
+    const photo = await createMemory(trip.id, coordinator.id, { kind: 'photo' });
+    storage.objects.set(photo.storagePath!, { body: JPEG, contentType: 'image/jpeg' });
+    const note = await createMemory(trip.id, coordinator.id);
+
+    const memories = (await as.traveller.get(base)).json().memories;
+    const byId = (id: string) => memories.find((memory: { id: string }) => memory.id === id);
+    expect(byId(photo.id).mediaUrl).toMatch(/^https:\/\/storage\.test\/signed\/.+\?expiresIn=900$/);
+    expect(byId(note.id)).not.toHaveProperty('mediaUrl');
+
+    storage.failNext('createSignedUrls');
+    const degraded = await as.traveller.get(base);
+    expect(degraded.statusCode).toBe(200);
+    expect(
+      degraded.json().memories.find((memory: { id: string }) => memory.id === photo.id).mediaUrl,
+    ).toBeNull();
+  });
+
   it.each([
     ['garbage', 'garbage'],
     // Data valida ma id non UUID: senza controllo arriverebbe a Postgres come 500.

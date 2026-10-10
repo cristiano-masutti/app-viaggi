@@ -271,7 +271,7 @@ Le route del viaggio iniziano tutte con `/api/trips/:tripId` (qui `…`).
 | `PUT` `DELETE` | `…/transports/:id` | C | sostituzione completa (documenti compresi) |
 | `PUT` `DELETE` | `…/insurance`, `…/customs` | C | |
 | `PUT` | `…/emergencies` | C | card SOS in blocco, nell'ordine dato |
-| `GET` | `…/memories` | M | `?day=&author=me\|<id>&kind=media\|note&cursor=&limit=` |
+| `GET` | `…/memories` | M | `?day=&author=me\|<id>&kind=media\|note&cursor=&limit=`; foto e video con `mediaUrl` già firmato (una sola chiamata allo storage per pagina) |
 | `POST` | `…/memories` | M | nota in JSON, foto/video in multipart |
 | `PATCH` `DELETE` | `…/memories/:id` | A | testo della nota o didascalia |
 | `PUT` `DELETE` | `…/memories/:id/reaction` | M | `fire`, `laugh`, `love`, `mindblown` |
@@ -309,7 +309,6 @@ Vedi [`.env.example`](./.env.example); lo schema completo, con i default, è in
   `UPLOAD_MAX_BYTES` per tutto).
 - **Pulizia:** un job che cancelli i documenti caricati e mai collegati a uno
   slot, e i file rimasti orfani per un errore dello storage.
-- **Hardening:** rate limiting (soprattutto su `/api/invites`), OpenAPI
-  generata dagli schemi zod per il client del mobile.
+- **Hardening:** rate limiting (soprattutto su `/api/invites`).
 - **Deploy:** Dockerfile, ambiente di staging, `prisma migrate deploy` nella
   pipeline di rilascio, error tracking.

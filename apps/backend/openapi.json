@@ -202,12 +202,19 @@
                                 },
                                 "hasPhoto": {
                                   "type": "boolean"
+                                },
+                                "photoVersion": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 }
                               },
                               "required": [
                                 "number",
                                 "expiry",
-                                "hasPhoto"
+                                "hasPhoto",
+                                "photoVersion"
                               ],
                               "additionalProperties": false
                             },
@@ -389,12 +396,19 @@
                                 },
                                 "hasPhoto": {
                                   "type": "boolean"
+                                },
+                                "photoVersion": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 }
                               },
                               "required": [
                                 "number",
                                 "expiry",
-                                "hasPhoto"
+                                "hasPhoto",
+                                "photoVersion"
                               ],
                               "additionalProperties": false
                             },
@@ -462,12 +476,19 @@
                         },
                         "hasPhoto": {
                           "type": "boolean"
+                        },
+                        "photoVersion": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
                         "number",
                         "expiry",
-                        "hasPhoto"
+                        "hasPhoto",
+                        "photoVersion"
                       ],
                       "additionalProperties": false
                     }
@@ -1196,12 +1217,19 @@
                                     },
                                     "hasPhoto": {
                                       "type": "boolean"
+                                    },
+                                    "photoVersion": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     }
                                   },
                                   "required": [
                                     "number",
                                     "expiry",
-                                    "hasPhoto"
+                                    "hasPhoto",
+                                    "photoVersion"
                                   ],
                                   "additionalProperties": false
                                 },
@@ -2065,12 +2093,19 @@
                                     },
                                     "hasPhoto": {
                                       "type": "boolean"
+                                    },
+                                    "photoVersion": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     }
                                   },
                                   "required": [
                                     "number",
                                     "expiry",
-                                    "hasPhoto"
+                                    "hasPhoto",
+                                    "photoVersion"
                                   ],
                                   "additionalProperties": false
                                 },
@@ -2983,12 +3018,19 @@
                                     },
                                     "hasPhoto": {
                                       "type": "boolean"
+                                    },
+                                    "photoVersion": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     }
                                   },
                                   "required": [
                                     "number",
                                     "expiry",
-                                    "hasPhoto"
+                                    "hasPhoto",
+                                    "photoVersion"
                                   ],
                                   "additionalProperties": false
                                 },
@@ -5776,6 +5818,17 @@
                               "mimeType": {
                                 "type": "string"
                               },
+                              "mediaUrl": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "reactions": {
                                 "type": "object",
                                 "properties": {
@@ -5831,6 +5884,7 @@
                               "blurhash",
                               "durationSeconds",
                               "mimeType",
+                              "mediaUrl",
                               "reactions",
                               "myReaction"
                             ],
@@ -6006,6 +6060,17 @@
                             "mimeType": {
                               "type": "string"
                             },
+                            "mediaUrl": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "reactions": {
                               "type": "object",
                               "properties": {
@@ -6061,6 +6126,7 @@
                             "blurhash",
                             "durationSeconds",
                             "mimeType",
+                            "mediaUrl",
                             "reactions",
                             "myReaction"
                           ],
@@ -6261,6 +6327,17 @@
                             "mimeType": {
                               "type": "string"
                             },
+                            "mediaUrl": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "reactions": {
                               "type": "object",
                               "properties": {
@@ -6316,6 +6393,7 @@
                             "blurhash",
                             "durationSeconds",
                             "mimeType",
+                            "mediaUrl",
                             "reactions",
                             "myReaction"
                           ],

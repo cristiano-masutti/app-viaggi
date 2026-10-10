@@ -78,6 +78,11 @@ const MediaMemoryDto = MemoryBase.extend({
   blurhash: z.string().nullable(),
   durationSeconds: z.number().int().nullable(),
   mimeType: z.string(),
+  /**
+   * URL firmato del file, valido `SIGNED_URL_TTL_SECONDS`: la griglia mostra le
+   * foto senza una chiamata per ognuna. `null` se lo storage non ha risposto.
+   */
+  mediaUrl: z.url().nullable(),
 }).extend(ReactionsDto.shape);
 
 const NoteMemoryDto = MemoryBase.extend({

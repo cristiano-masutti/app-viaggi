@@ -55,7 +55,7 @@ describe('PATCH /api/me', () => {
       username: 'marcorossi',
       fiscalCode: 'RSSMRC88T10H501K',
       medicalNotes: 'Allergia alle arachidi',
-      passport: { number: 'YA9182773', expiry: '04/2029', hasPhoto: false },
+      passport: { number: 'YA9182773', expiry: '04/2029', hasPhoto: false, photoVersion: null },
     });
   });
 
@@ -96,11 +96,22 @@ describe('passport photo', () => {
     const { api, user, storage } = await setup();
 
     const first = await api.put('/api/me/passport/photo', fileForm(JPEG, { filename: 'pagina-dati.jpg' }));
-    expect(first.json().passport).toEqual({ number: null, expiry: null, hasPhoto: true });
+    expect(first.json().passport).toEqual({
+      number: null,
+      expiry: null,
+      hasPhoto: true,
+      photoVersion: expect.stringMatching(/^[0-9a-f]{16}$/),
+    });
     const firstPath = (await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).passportPhotoPath!;
     expect(firstPath).toMatch(new RegExp(`^users/${user.id}/passport/[0-9a-f-]{36}\\.jpg$`));
+    expect(first.json().passport.photoVersion).not.toContain(firstPath);
 
-    await api.put('/api/me/passport/photo', fileForm(PDF, { filename: 'scansione.pdf' }));
+    // Una scansione nuova ha una versione nuova: i telefoni sanno di doverla riscaricare.
+    const second = await api.put('/api/me/passport/photo', fileForm(PDF, { filename: 'scansione.pdf' }));
+    expect(second.json().passport.photoVersion).not.toBe(first.json().passport.photoVersion);
+    expect((await api.get('/api/me')).json().user.passport.photoVersion).toBe(
+      second.json().passport.photoVersion,
+    );
     expect(storage.objects.has(firstPath)).toBe(false);
     expect(storage.objects.size).toBe(1);
 

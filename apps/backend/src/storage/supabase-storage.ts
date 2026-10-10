@@ -30,6 +30,17 @@ export function createSupabaseStorage({
       return data.signedUrl;
     },
 
+    async createSignedUrls(paths, expiresInSeconds) {
+      if (paths.length === 0) return new Map();
+      const { data, error } = await files().createSignedUrls(paths, expiresInSeconds);
+      if (error) throw new StorageError('createSignedUrls', error.message, { cause: error });
+      return new Map(
+        data.flatMap((entry) =>
+          entry.path && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [],
+        ),
+      );
+    },
+
     async remove(paths) {
       const { error } = await files().remove(paths);
       if (error) throw new StorageError('remove', error.message, { cause: error });

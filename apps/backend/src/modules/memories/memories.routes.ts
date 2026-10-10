@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 
+import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
@@ -58,7 +59,31 @@ async function loadReactions(prisma: PrismaClient, memoryIds: string[], userId: 
   return byMemory;
 }
 
-function toMemoryDto(memory: Memory, reactions: z.output<typeof ReactionsDto>): MemoryDto {
+/**
+ * URL firmati per le foto e i video di una pagina, con una sola chiamata allo
+ * storage. Se lo storage non risponde la pagina arriva lo stesso, senza URL:
+ * note, didascalie e reazioni restano leggibili.
+ */
+async function signMedia(
+  app: FastifyInstance,
+  log: FastifyBaseLogger,
+  memories: Memory[],
+): Promise<Map<string, string>> {
+  const paths = memories.flatMap((memory) => (memory.storagePath ? [memory.storagePath] : []));
+  if (paths.length === 0) return new Map();
+  try {
+    return await app.storage.createSignedUrls(paths, app.config.SIGNED_URL_TTL_SECONDS);
+  } catch (error) {
+    log.error({ err: error }, 'Could not sign memory media URLs');
+    return new Map();
+  }
+}
+
+function toMemoryDto(
+  memory: Memory,
+  reactions: z.output<typeof ReactionsDto>,
+  mediaUrls: Map<string, string>,
+): MemoryDto {
   const base = {
     id: memory.id,
     dayIndex: memory.dayIndex,
@@ -79,6 +104,7 @@ function toMemoryDto(memory: Memory, reactions: z.output<typeof ReactionsDto>): 
     blurhash: memory.blurhash,
     durationSeconds: memory.durationSeconds,
     mimeType: memory.mimeType ?? 'application/octet-stream',
+    mediaUrl: (memory.storagePath && mediaUrls.get(memory.storagePath)) ?? null,
     ...reactions,
   };
 }
@@ -124,14 +150,19 @@ export const memoryRoutes: FastifyPluginAsyncZod = async (app) => {
       });
       const memories = page.slice(0, limit);
       const last = memories.at(-1);
-      const reactions = await loadReactions(
-        app.prisma,
-        memories.map((memory) => memory.id),
-        userId,
-      );
+      const [reactions, mediaUrls] = await Promise.all([
+        loadReactions(
+          app.prisma,
+          memories.map((memory) => memory.id),
+          userId,
+        ),
+        signMedia(app, request.log, memories),
+      ]);
 
       return {
-        memories: memories.map((memory) => toMemoryDto(memory, reactions.get(memory.id) ?? noReactions())),
+        memories: memories.map((memory) =>
+          toMemoryDto(memory, reactions.get(memory.id) ?? noReactions(), mediaUrls),
+        ),
         nextCursor: page.length > limit && last ? encodeCursor(last) : null,
       };
     },
@@ -167,7 +198,7 @@ export const memoryRoutes: FastifyPluginAsyncZod = async (app) => {
             },
           });
         });
-        return reply.status(201).send({ memory: toMemoryDto(memory, noReactions()) });
+        return reply.status(201).send({ memory: toMemoryDto(memory, noReactions(), new Map()) });
       }
 
       const upload = await readUpload(request, { accept: MEDIA_FILE_TYPES });
@@ -193,7 +224,8 @@ export const memoryRoutes: FastifyPluginAsyncZod = async (app) => {
             },
           });
         });
-        return reply.status(201).send({ memory: toMemoryDto(memory, noReactions()) });
+        const mediaUrls = await signMedia(app, request.log, [memory]);
+        return reply.status(201).send({ memory: toMemoryDto(memory, noReactions(), mediaUrls) });
       } catch (error) {
         await removeStoredFiles(app.storage, request.log, [storagePath]);
         throw error;
@@ -229,8 +261,11 @@ export const memoryRoutes: FastifyPluginAsyncZod = async (app) => {
         where: { id: memory.id },
         data: isNote ? { text } : { caption: caption === '' ? null : caption },
       });
-      const reactions = await loadReactions(app.prisma, [memory.id], userId);
-      return { memory: toMemoryDto(updated, reactions.get(memory.id) ?? noReactions()) };
+      const [reactions, mediaUrls] = await Promise.all([
+        loadReactions(app.prisma, [memory.id], userId),
+        signMedia(app, request.log, [updated]),
+      ]);
+      return { memory: toMemoryDto(updated, reactions.get(memory.id) ?? noReactions(), mediaUrls) };
     },
   );
 

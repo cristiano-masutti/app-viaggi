@@ -78,7 +78,12 @@ export async function buildApp(deps: AppDeps, options: BuildAppOptions = {}) {
 
   registerErrorHandling(app);
 
-  await app.register(cors, { origin: deps.config.CORS_ORIGIN });
+  await app.register(cors, {
+    origin: deps.config.CORS_ORIGIN,
+    // Il default del plugin ammette solo i metodi "semplici" (GET, HEAD, POST):
+    // dal browser ogni modifica (PUT, PATCH, DELETE) verrebbe bloccata.
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  });
   await app.register(multipart, {
     limits: { fileSize: deps.config.UPLOAD_MAX_BYTES, files: 1 },
   });

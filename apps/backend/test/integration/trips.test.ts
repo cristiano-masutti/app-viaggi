@@ -205,7 +205,9 @@ describe('GET /api/trips/:tripId', () => {
     expect(body.trip).toMatchObject({
       myRole: 'traveller',
       totalDays: 10,
-      documents: { passport: { number: 'YA9182773', expiry: '04/2029', hasPhoto: false } },
+      documents: {
+        passport: { number: 'YA9182773', expiry: '04/2029', hasPhoto: false, photoVersion: null },
+      },
     });
     expect(body.trip.days).toHaveLength(10);
     expect(body.trip.crew.map((member: { role: string }) => member.role)).toEqual([
