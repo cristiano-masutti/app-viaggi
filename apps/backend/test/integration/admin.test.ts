@@ -34,6 +34,8 @@ const ADMIN_ROUTES = [
   'GET /api/admin/users',
   'GET /api/admin/users/:userId',
   'POST /api/admin/users',
+  'GET /api/admin/usage',
+  'GET /api/admin/performance',
 ];
 
 describe('admin access', () => {
@@ -283,6 +285,7 @@ describe('trips', () => {
         role: 'coordinator',
         joinedAt: expect.any(String),
         passport: { present: true, expiry: '01/2032' },
+        lastSeenAt: null,
       },
     ]);
     expect(trip.invitations).toEqual([

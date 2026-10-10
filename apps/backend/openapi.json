@@ -6904,6 +6904,155 @@
         }
       }
     },
+    "/api/telemetry": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "app",
+                      "panel"
+                    ]
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "ios",
+                      "android",
+                      "web"
+                    ]
+                  },
+                  "appVersion": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "pattern": "^[\\w.+-]*$"
+                  },
+                  "events": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "enum": [
+                            "app_open",
+                            "screen_view",
+                            "document_open"
+                          ]
+                        },
+                        "screen": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "pattern": "^[\\w/:{}. -]+$"
+                        },
+                        "tripId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "occurredAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "occurredAt"
+                      ]
+                    }
+                  },
+                  "samples": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "metric": {
+                          "type": "string",
+                          "enum": [
+                            "app_start",
+                            "screen_ready",
+                            "api_latency",
+                            "slow_frames",
+                            "frozen_frames",
+                            "lcp",
+                            "inp",
+                            "cls",
+                            "ttfb"
+                          ]
+                        },
+                        "target": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "pattern": "^[\\w/:{}. -]+$"
+                        },
+                        "value": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "occurredAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "metric",
+                        "value",
+                        "occurredAt"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "source",
+                  "platform"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "samples": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "events",
+                    "samples"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/session": {
       "get": {
         "responses": {
@@ -8050,6 +8199,17 @@
                                   "expiry"
                                 ],
                                 "additionalProperties": false
+                              },
+                              "lastSeenAt": {
+                                "anyOf": [
+                                  {
+                                    "format": "date-time",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -8060,7 +8220,8 @@
                               "email",
                               "role",
                               "joinedAt",
-                              "passport"
+                              "passport",
+                              "lastSeenAt"
                             ],
                             "additionalProperties": false
                           }
@@ -8636,6 +8797,17 @@
                                   "expiry"
                                 ],
                                 "additionalProperties": false
+                              },
+                              "lastSeenAt": {
+                                "anyOf": [
+                                  {
+                                    "format": "date-time",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -8646,7 +8818,8 @@
                               "email",
                               "role",
                               "joinedAt",
-                              "passport"
+                              "passport",
+                              "lastSeenAt"
                             ],
                             "additionalProperties": false
                           }
@@ -9057,6 +9230,17 @@
                             "expiry"
                           ],
                           "additionalProperties": false
+                        },
+                        "lastSeenAt": {
+                          "anyOf": [
+                            {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -9067,7 +9251,8 @@
                         "email",
                         "role",
                         "joinedAt",
-                        "passport"
+                        "passport",
+                        "lastSeenAt"
                       ],
                       "additionalProperties": false
                     }
@@ -9192,6 +9377,17 @@
                             "expiry"
                           ],
                           "additionalProperties": false
+                        },
+                        "lastSeenAt": {
+                          "anyOf": [
+                            {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -9202,7 +9398,8 @@
                         "email",
                         "role",
                         "joinedAt",
-                        "passport"
+                        "passport",
+                        "lastSeenAt"
                       ],
                       "additionalProperties": false
                     }
@@ -9359,6 +9556,17 @@
                               "expiry"
                             ],
                             "additionalProperties": false
+                          },
+                          "lastSeenAt": {
+                            "anyOf": [
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -9370,7 +9578,8 @@
                           "isAdmin",
                           "createdAt",
                           "tripCount",
-                          "passport"
+                          "passport",
+                          "lastSeenAt"
                         ],
                         "additionalProperties": false
                       }
@@ -9490,6 +9699,17 @@
                             "expiry"
                           ],
                           "additionalProperties": false
+                        },
+                        "lastSeenAt": {
+                          "anyOf": [
+                            {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -9501,7 +9721,8 @@
                         "isAdmin",
                         "createdAt",
                         "tripCount",
-                        "passport"
+                        "passport",
+                        "lastSeenAt"
                       ],
                       "additionalProperties": false
                     },
@@ -9611,6 +9832,43 @@
                           ],
                           "additionalProperties": false
                         },
+                        "lastSeenAt": {
+                          "anyOf": [
+                            {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "usage": {
+                          "type": "object",
+                          "properties": {
+                            "appOpens": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "screenViews": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "documentOpens": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "appOpens",
+                            "screenViews",
+                            "documentOpens"
+                          ],
+                          "additionalProperties": false
+                        },
                         "trips": {
                           "type": "array",
                           "items": {
@@ -9675,6 +9933,8 @@
                         "createdAt",
                         "tripCount",
                         "passport",
+                        "lastSeenAt",
+                        "usage",
                         "trips"
                       ],
                       "additionalProperties": false
@@ -9682,6 +9942,586 @@
                   },
                   "required": [
                     "user"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/usage": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 90
+            },
+            "in": "query",
+            "name": "days",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "date",
+              "type": "string",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "in": "query",
+            "name": "today",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": "UTC",
+              "type": "string",
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "tz",
+            "required": false,
+            "description": "Fuso di chi guarda: i giorni delle serie sono i suoi (es. Europe/Rome)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "to": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "activeUsers": {
+                      "type": "object",
+                      "properties": {
+                        "today": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "week": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "month": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "today",
+                        "week",
+                        "month"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "people": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "daily": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "day": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "activeUsers": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "appOpens": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "documentOpens": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "day",
+                          "activeUsers",
+                          "appOpens",
+                          "documentOpens"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "screens": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "screen": {
+                            "type": "string"
+                          },
+                          "views": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "users": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "screen",
+                          "views",
+                          "users"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "platforms": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "platform": {
+                            "type": "string",
+                            "enum": [
+                              "ios",
+                              "android",
+                              "web"
+                            ]
+                          },
+                          "users": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "platform",
+                          "users"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "inactive": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "people": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "userId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "firstName": {
+                                "type": "string"
+                              },
+                              "lastName": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "lastSeenAt": {
+                                "anyOf": [
+                                  {
+                                    "format": "date-time",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "trip": {
+                                "type": "object",
+                                "properties": {
+                                  "tripId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "title": {
+                                    "type": "string"
+                                  },
+                                  "startDate": {
+                                    "format": "date",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "tripId",
+                                  "title",
+                                  "startDate"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "userId",
+                              "firstName",
+                              "lastName",
+                              "email",
+                              "lastSeenAt",
+                              "trip"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "people"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "liveTrips": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tripId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "members": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "activeMembers": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "documentOpens": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "tripId",
+                          "title",
+                          "members",
+                          "activeMembers",
+                          "documentOpens"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to",
+                    "activeUsers",
+                    "people",
+                    "daily",
+                    "screens",
+                    "platforms",
+                    "inactive",
+                    "liveTrips"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/performance": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 90
+            },
+            "in": "query",
+            "name": "days",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "date",
+              "type": "string",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "in": "query",
+            "name": "today",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": "UTC",
+              "type": "string",
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "tz",
+            "required": false,
+            "description": "Fuso di chi guarda: i giorni delle serie sono i suoi (es. Europe/Rome)."
+          },
+          {
+            "schema": {
+              "default": "app",
+              "type": "string",
+              "enum": [
+                "app",
+                "panel"
+              ]
+            },
+            "in": "query",
+            "name": "source",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "app",
+                        "panel"
+                      ]
+                    },
+                    "from": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "to": {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    "metrics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "metric": {
+                            "type": "string",
+                            "enum": [
+                              "app_start",
+                              "screen_ready",
+                              "api_latency",
+                              "slow_frames",
+                              "frozen_frames",
+                              "lcp",
+                              "inp",
+                              "cls",
+                              "ttfb"
+                            ]
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "p50": {
+                            "type": "number"
+                          },
+                          "p75": {
+                            "type": "number"
+                          },
+                          "p95": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "metric",
+                          "count",
+                          "p50",
+                          "p75",
+                          "p95"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "daily": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "day": {
+                            "format": "date",
+                            "type": "string"
+                          },
+                          "metric": {
+                            "type": "string",
+                            "enum": [
+                              "app_start",
+                              "screen_ready",
+                              "api_latency",
+                              "slow_frames",
+                              "frozen_frames",
+                              "lcp",
+                              "inp",
+                              "cls",
+                              "ttfb"
+                            ]
+                          },
+                          "p75": {
+                            "type": "number"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "day",
+                          "metric",
+                          "p75",
+                          "count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "targets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "metric": {
+                            "type": "string",
+                            "enum": [
+                              "app_start",
+                              "screen_ready",
+                              "api_latency",
+                              "slow_frames",
+                              "frozen_frames",
+                              "lcp",
+                              "inp",
+                              "cls",
+                              "ttfb"
+                            ]
+                          },
+                          "target": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "p50": {
+                            "type": "number"
+                          },
+                          "p75": {
+                            "type": "number"
+                          },
+                          "p95": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "metric",
+                          "target",
+                          "count",
+                          "p50",
+                          "p75",
+                          "p95"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "platforms": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "platform": {
+                            "type": "string",
+                            "enum": [
+                              "ios",
+                              "android",
+                              "web"
+                            ]
+                          },
+                          "metric": {
+                            "type": "string",
+                            "enum": [
+                              "app_start",
+                              "screen_ready",
+                              "api_latency",
+                              "slow_frames",
+                              "frozen_frames",
+                              "lcp",
+                              "inp",
+                              "cls",
+                              "ttfb"
+                            ]
+                          },
+                          "p75": {
+                            "type": "number"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "platform",
+                          "metric",
+                          "p75",
+                          "count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "from",
+                    "to",
+                    "metrics",
+                    "daily",
+                    "targets",
+                    "platforms"
                   ],
                   "additionalProperties": false
                 }

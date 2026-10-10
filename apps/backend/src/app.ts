@@ -16,6 +16,7 @@ import { adminRoutes } from './modules/admin/admin.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { inviteRoutes } from './modules/crew/invites.routes.js';
 import { meRoutes } from './modules/me/me.routes.js';
+import { telemetryRoutes } from './modules/telemetry/telemetry.routes.js';
 import { tripRoutes } from './modules/trips/trips.routes.js';
 import { registerOpenApi } from './openapi.js';
 import type { ObjectStorage } from './storage/storage.js';
@@ -108,6 +109,7 @@ export async function buildApp(deps: AppDeps, options: BuildAppOptions = {}) {
       await api.register(meRoutes);
       await api.register(tripRoutes);
       await api.register(inviteRoutes);
+      await api.register(telemetryRoutes);
       await adminScope(api, async (admin) => {
         await admin.register(adminRoutes);
       });

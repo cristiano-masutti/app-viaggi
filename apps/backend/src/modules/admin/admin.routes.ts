@@ -1,6 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
 import { tripStatusWhere, utcToday } from '../trips/trip-status.js';
+import { adminMetricsRoutes } from './admin-metrics.routes.js';
 import { adminTripsRoutes } from './admin-trips.routes.js';
 import { adminTripInclude, toAdminTripSummary } from './admin-trips.js';
 import { adminUsersRoutes } from './admin-users.routes.js';
@@ -79,4 +80,5 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
 
   await app.register(adminTripsRoutes);
   await app.register(adminUsersRoutes);
+  await app.register(adminMetricsRoutes);
 };

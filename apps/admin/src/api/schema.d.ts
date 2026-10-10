@@ -2553,6 +2553,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/telemetry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        source: "app" | "panel";
+                        /** @enum {string} */
+                        platform: "ios" | "android" | "web";
+                        appVersion?: string;
+                        events?: {
+                            /** @enum {string} */
+                            name: "app_open" | "screen_view" | "document_open";
+                            screen?: string;
+                            /** Format: uuid */
+                            tripId?: string;
+                            /** Format: date-time */
+                            occurredAt: string;
+                        }[];
+                        samples?: {
+                            /** @enum {string} */
+                            metric: "app_start" | "screen_ready" | "api_latency" | "slow_frames" | "frozen_frames" | "lcp" | "inp" | "cls" | "ttfb";
+                            target?: string;
+                            value: number;
+                            /** Format: date-time */
+                            occurredAt: string;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            events: number;
+                            samples: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/session": {
         parameters: {
             query?: never;
@@ -2891,6 +2956,7 @@ export interface paths {
                                         present: boolean;
                                         expiry: string | null;
                                     };
+                                    lastSeenAt: string | null;
                                 }[];
                                 invitations: {
                                     /** Format: uuid */
@@ -3043,6 +3109,7 @@ export interface paths {
                                         present: boolean;
                                         expiry: string | null;
                                     };
+                                    lastSeenAt: string | null;
                                 }[];
                                 invitations: {
                                     /** Format: uuid */
@@ -3168,6 +3235,7 @@ export interface paths {
                                     present: boolean;
                                     expiry: string | null;
                                 };
+                                lastSeenAt: string | null;
                             };
                         };
                     };
@@ -3254,6 +3322,7 @@ export interface paths {
                                     present: boolean;
                                     expiry: string | null;
                                 };
+                                lastSeenAt: string | null;
                             };
                         };
                     };
@@ -3306,6 +3375,7 @@ export interface paths {
                                     present: boolean;
                                     expiry: string | null;
                                 };
+                                lastSeenAt: string | null;
                             }[];
                             total: number;
                         };
@@ -3354,6 +3424,7 @@ export interface paths {
                                     present: boolean;
                                     expiry: string | null;
                                 };
+                                lastSeenAt: string | null;
                             };
                             temporaryPassword: string;
                         };
@@ -3410,6 +3481,12 @@ export interface paths {
                                     present: boolean;
                                     expiry: string | null;
                                 };
+                                lastSeenAt: string | null;
+                                usage: {
+                                    appOpens: number;
+                                    screenViews: number;
+                                    documentOpens: number;
+                                };
                                 trips: {
                                     /** Format: uuid */
                                     tripId: string;
@@ -3426,6 +3503,181 @@ export interface paths {
                                     joinedAt: string;
                                 }[];
                             };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    days?: number;
+                    today?: string;
+                    /** @description Fuso di chi guarda: i giorni delle serie sono i suoi (es. Europe/Rome). */
+                    tz?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date */
+                            from: string;
+                            /** Format: date */
+                            to: string;
+                            activeUsers: {
+                                today: number;
+                                week: number;
+                                month: number;
+                            };
+                            people: number;
+                            daily: {
+                                /** Format: date */
+                                day: string;
+                                activeUsers: number;
+                                appOpens: number;
+                                documentOpens: number;
+                            }[];
+                            screens: {
+                                screen: string;
+                                views: number;
+                                users: number;
+                            }[];
+                            platforms: {
+                                /** @enum {string} */
+                                platform: "ios" | "android" | "web";
+                                users: number;
+                            }[];
+                            inactive: {
+                                total: number;
+                                people: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                    email: string | null;
+                                    lastSeenAt: string | null;
+                                    trip: {
+                                        /** Format: uuid */
+                                        tripId: string;
+                                        title: string;
+                                        /** Format: date */
+                                        startDate: string;
+                                    };
+                                }[];
+                            };
+                            liveTrips: {
+                                /** Format: uuid */
+                                tripId: string;
+                                title: string;
+                                members: number;
+                                activeMembers: number;
+                                documentOpens: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    days?: number;
+                    today?: string;
+                    /** @description Fuso di chi guarda: i giorni delle serie sono i suoi (es. Europe/Rome). */
+                    tz?: string;
+                    source?: "app" | "panel";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            source: "app" | "panel";
+                            /** Format: date */
+                            from: string;
+                            /** Format: date */
+                            to: string;
+                            metrics: {
+                                /** @enum {string} */
+                                metric: "app_start" | "screen_ready" | "api_latency" | "slow_frames" | "frozen_frames" | "lcp" | "inp" | "cls" | "ttfb";
+                                count: number;
+                                p50: number;
+                                p75: number;
+                                p95: number;
+                            }[];
+                            daily: {
+                                /** Format: date */
+                                day: string;
+                                /** @enum {string} */
+                                metric: "app_start" | "screen_ready" | "api_latency" | "slow_frames" | "frozen_frames" | "lcp" | "inp" | "cls" | "ttfb";
+                                p75: number;
+                                count: number;
+                            }[];
+                            targets: {
+                                /** @enum {string} */
+                                metric: "app_start" | "screen_ready" | "api_latency" | "slow_frames" | "frozen_frames" | "lcp" | "inp" | "cls" | "ttfb";
+                                target: string;
+                                count: number;
+                                p50: number;
+                                p75: number;
+                                p95: number;
+                            }[];
+                            platforms: {
+                                /** @enum {string} */
+                                platform: "ios" | "android" | "web";
+                                /** @enum {string} */
+                                metric: "app_start" | "screen_ready" | "api_latency" | "slow_frames" | "frozen_frames" | "lcp" | "inp" | "cls" | "ttfb";
+                                p75: number;
+                                count: number;
+                            }[];
                         };
                     };
                 };
