@@ -4,6 +4,7 @@ import { type AppDeps, buildApp } from '../../src/app.js';
 import { type AppConfig, loadConfig } from '../../src/config/env.js';
 import { testTokenVerifier } from './auth.js';
 import { prisma } from './db.js';
+import { InMemoryAccountAdmin } from './memory-account-admin.js';
 import { InMemoryStorage } from './memory-storage.js';
 
 export const testConfig = (overrides: Partial<AppConfig> = {}): AppConfig => ({
@@ -28,9 +29,11 @@ export async function createTestApp(
     prisma?: AppDeps['prisma'];
     storage?: InMemoryStorage;
     tokenVerifier?: AppDeps['tokenVerifier'];
+    accountAdmin?: InMemoryAccountAdmin;
   } = {},
 ) {
   const storage = overrides.storage ?? new InMemoryStorage();
+  const accountAdmin = overrides.accountAdmin ?? new InMemoryAccountAdmin();
   const routes: Array<{ method: string; url: string }> = [];
   const app = await buildApp(
     {
@@ -38,6 +41,7 @@ export async function createTestApp(
       prisma: overrides.prisma ?? prisma,
       storage,
       tokenVerifier: overrides.tokenVerifier ?? testTokenVerifier,
+      accountAdmin,
     },
     {
       logger: false,
@@ -52,5 +56,5 @@ export async function createTestApp(
   await app.ready();
   openApps.push(app);
 
-  return { app, storage, routes };
+  return { app, storage, accountAdmin, routes };
 }

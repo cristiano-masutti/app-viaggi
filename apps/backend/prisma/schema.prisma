@@ -44,6 +44,11 @@ model User {
   passportExpiry    String?
   passportPhotoPath String?
 
+  /// Staff dell'organizzazione: entra nel pannello di controllo e vede tutti i
+  /// viaggi. Si concede solo da riga di comando (`npm run staff -- grant <email>`),
+  /// mai dall'API: nessuna richiesta può promuovere qualcuno.
+  isAdmin Boolean @default(false)
+
   memberships       TripMember[]
   invitationsSent   TripInvitation[]
   uploadedDocuments Document[]

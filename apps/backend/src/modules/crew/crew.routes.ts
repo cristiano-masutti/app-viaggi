@@ -1,12 +1,12 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
-import type { Prisma } from '../../generated/prisma/client.js';
 import { TripRole } from '../../generated/prisma/enums.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import { generateInviteCode } from '../trips/invite-code.js';
 import { COORDINATOR_ONLY, TripParams } from '../trips/trip-access.js';
 import { lockTrip, seatsTaken } from '../trips/trip-lock.js';
+import { assertNotLastCoordinator } from './membership.js';
 import {
   AddInvitationsBody,
   InvitationDto,
@@ -17,23 +17,6 @@ import {
   toMemberDto,
   UpdateMemberBody,
 } from './crew.schemas.js';
-
-const lastCoordinator = () =>
-  new AppError(409, 'LAST_COORDINATOR', 'A trip always needs a coordinator: promote someone else first');
-
-/**
- * Un viaggio non resta mai senza coordinatore. Il controllo blocca la riga del
- * viaggio (FOR UPDATE), così due coordinatori che escono insieme non possono
- * lasciarlo vuoto passando entrambi il conteggio.
- */
-async function assertNotLastCoordinator(tx: Prisma.TransactionClient, tripId: string, userId: string) {
-  await lockTrip(tx, tripId);
-  const coordinators = await tx.tripMember.findMany({
-    where: { tripId, role: TripRole.coordinator },
-    select: { userId: true },
-  });
-  if (coordinators.length === 1 && coordinators[0]?.userId === userId) throw lastCoordinator();
-}
 
 export const crewRoutes: FastifyPluginAsyncZod = async (app) => {
   /** Posti riservati a persone che entreranno col link. */

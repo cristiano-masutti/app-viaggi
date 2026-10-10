@@ -24,6 +24,7 @@
     "prisma:check": "prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
     "prisma:studio": "prisma studio",
     "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build",
+    "staff": "tsx scripts/staff-cli.ts",
     "openapi": "tsx scripts/openapi.ts"
   },
   "dependencies": {

@@ -5,11 +5,14 @@ import multipart from '@fastify/multipart';
 import Fastify, { type FastifyRequest, type FastifyServerOptions, type RouteOptions } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 
+import type { AccountAdmin } from './auth/account-admin.js';
 import { createAuthenticateHook } from './auth/authenticate.js';
 import type { TokenVerifier } from './auth/token-verifier.js';
 import type { AppConfig } from './config/env.js';
 import { registerErrorHandling } from './lib/errors.js';
 import type { PrismaClient } from './lib/prisma.js';
+import { adminScope } from './modules/admin/admin-access.js';
+import { adminRoutes } from './modules/admin/admin.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { inviteRoutes } from './modules/crew/invites.routes.js';
 import { meRoutes } from './modules/me/me.routes.js';
@@ -27,6 +30,8 @@ export interface AppDeps {
   prisma: PrismaClient;
   storage: ObjectStorage;
   tokenVerifier: TokenVerifier;
+  /** Crea gli account su Supabase Auth: lo usa solo il pannello di controllo. */
+  accountAdmin: AccountAdmin;
 }
 
 declare module 'fastify' {
@@ -35,6 +40,7 @@ declare module 'fastify' {
     prisma: PrismaClient;
     storage: ObjectStorage;
     tokenVerifier: TokenVerifier;
+    accountAdmin: AccountAdmin;
   }
 }
 
@@ -69,6 +75,7 @@ export async function buildApp(deps: AppDeps, options: BuildAppOptions = {}) {
   app.decorate('prisma', deps.prisma);
   app.decorate('storage', deps.storage);
   app.decorate('tokenVerifier', deps.tokenVerifier);
+  app.decorate('accountAdmin', deps.accountAdmin);
   // Valorizzati dagli hook di autenticazione e di accesso al viaggio prima di
   // qualunque handler che li legga; dichiararli qui tiene stabile la forma
   // dell'oggetto request (raccomandazione di Fastify).
@@ -101,6 +108,9 @@ export async function buildApp(deps: AppDeps, options: BuildAppOptions = {}) {
       await api.register(meRoutes);
       await api.register(tripRoutes);
       await api.register(inviteRoutes);
+      await adminScope(api, async (admin) => {
+        await admin.register(adminRoutes);
+      });
     },
     { prefix: '/api' },
   );

@@ -1,4 +1,5 @@
 import { buildApp } from '../src/app.js';
+import type { AccountAdmin } from '../src/auth/account-admin.js';
 import type { TokenVerifier } from '../src/auth/token-verifier.js';
 import { loadConfig } from '../src/config/env.js';
 import type { PrismaClient } from '../src/lib/prisma.js';
@@ -21,6 +22,7 @@ export async function buildOpenApiDocument(): Promise<string> {
       prisma: {} as PrismaClient,
       storage: {} as ObjectStorage,
       tokenVerifier: {} as TokenVerifier,
+      accountAdmin: {} as AccountAdmin,
     },
     { logger: false },
   );

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 import { buildApp } from './app.js';
+import { createSupabaseAccountAdmin } from './auth/account-admin.js';
 import { createSupabaseTokenVerifier } from './auth/token-verifier.js';
 import { loadConfig } from './config/env.js';
 import { createPrismaClient } from './lib/prisma.js';
@@ -18,8 +19,12 @@ const storage = createSupabaseStorage({
 });
 
 const tokenVerifier = createSupabaseTokenVerifier(config.SUPABASE_URL);
+const accountAdmin = createSupabaseAccountAdmin({
+  url: config.SUPABASE_URL,
+  serviceRoleKey: config.SUPABASE_SERVICE_ROLE_KEY,
+});
 
-const app = await buildApp({ config, prisma, storage, tokenVerifier });
+const app = await buildApp({ config, prisma, storage, tokenVerifier, accountAdmin });
 app.addHook('onClose', async () => {
   await prisma.$disconnect();
 });
