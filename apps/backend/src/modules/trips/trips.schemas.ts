@@ -14,11 +14,11 @@ import {
 import { PassportDto } from '../me/me.schemas.js';
 import { countDays, MAX_TRIP_DAYS } from './days.js';
 
-const Title = z.string().trim().min(2).max(120);
-const Destination = z.string().trim().min(2).max(120);
-const CrewCapacity = z.number().int().min(1).max(200);
+export const Title = z.string().trim().min(2).max(120);
+export const Destination = z.string().trim().min(2).max(120);
+export const CrewCapacity = z.number().int().min(1).max(200);
 
-const validDates = <T extends { startDate: Date; endDate: Date }>(schema: z.ZodType<T>) =>
+export const validDates = <T extends { startDate: Date; endDate: Date }>(schema: z.ZodType<T>) =>
   schema
     .refine((trip) => trip.endDate >= trip.startDate, {
       path: ['endDate'],

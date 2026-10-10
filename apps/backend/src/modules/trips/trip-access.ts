@@ -2,7 +2,7 @@ import type { FastifyInstance, onRequestAsyncHookHandler } from 'fastify';
 import { z } from 'zod';
 
 import type { Trip, TripMember } from '../../generated/prisma/client.js';
-import type { TripRole } from '../../generated/prisma/enums.js';
+import { TripRole } from '../../generated/prisma/enums.js';
 import { forbidden, notFound } from '../../lib/errors.js';
 
 declare module 'fastify' {
@@ -12,11 +12,19 @@ declare module 'fastify' {
      * viaggio. Chi non è membro riceve sempre 404.
      */
     tripRoles?: readonly TripRole[];
+    /**
+     * Anche lo staff (pannello di controllo) può chiamare la route, come se
+     * fosse coordinatore, senza far parte del viaggio. Solo le route che
+     * organizzano il viaggio: mai quelle dei ricordi, che restano della crew.
+     */
+    staff?: boolean;
   }
 
   interface FastifyRequest {
-    /** La partecipazione dell'utente al viaggio della route, già verificata. */
-    tripMember: TripMember;
+    /** La partecipazione dell'utente al viaggio; `null` se passa come staff senza esserne membro. */
+    tripMember: TripMember | null;
+    /** Il ruolo con cui agisce: il suo nella crew, oppure coordinatore se passa come staff. */
+    tripRole: TripRole;
     /** Il viaggio della route, caricato insieme alla partecipazione. */
     trip: Trip;
   }
@@ -58,20 +66,45 @@ function requireTripMember(app: FastifyInstance): onRequestAsyncHookHandler {
       where: { tripId_userId: { tripId, userId: request.user.id } },
       include: { trip: true },
     });
-    if (!member) throw notFound('Trip');
+    const { tripRoles: allowedRoles, staff } = request.routeOptions.config;
+    const allowedAsMember = member && (!allowedRoles || allowedRoles.includes(member.role));
 
-    const allowedRoles = request.routeOptions.config.tripRoles;
-    if (allowedRoles && !allowedRoles.includes(member.role)) {
-      throw forbidden(`This action requires one of the roles: ${allowedRoles.join(', ')}`);
+    if (member && allowedAsMember) {
+      const { trip, ...tripMember } = member;
+      request.tripMember = tripMember;
+      request.tripRole = tripMember.role;
+      request.trip = trip;
+      return;
     }
 
-    const { trip, ...tripMember } = member;
-    request.tripMember = tripMember;
-    request.trip = trip;
+    // Il ruolo di staff si rilegge a ogni richiesta, e solo quando la crew non basta.
+    if (staff && (await isStaff(app, request.user.id))) {
+      const trip = member?.trip ?? (await app.prisma.trip.findUnique({ where: { id: tripId } }));
+      if (!trip) throw notFound('Trip');
+      request.tripMember = member
+        ? { tripId: member.tripId, userId: member.userId, role: member.role, joinedAt: member.joinedAt }
+        : null;
+      request.tripRole = TripRole.coordinator;
+      request.trip = trip;
+      request.log.info({ userId: request.user.id, tripId }, 'Staff acting on a trip');
+      return;
+    }
+
+    if (!member) throw notFound('Trip');
+    throw forbidden(`This action requires one of the roles: ${allowedRoles?.join(', ') ?? ''}`);
   };
 }
 
-/** Scorciatoia per le route riservate a chi organizza il viaggio. */
-export const COORDINATOR_ONLY = { tripRoles: ['coordinator'] } as const satisfies {
+async function isStaff(app: FastifyInstance, userId: string) {
+  const user = await app.prisma.user.findUnique({ where: { id: userId }, select: { isAdmin: true } });
+  return user?.isAdmin === true;
+}
+
+/** Le route che organizzano il viaggio: coordinatori della crew e staff. */
+export const COORDINATOR_ONLY = { tripRoles: ['coordinator'], staff: true } as const satisfies {
   tripRoles: readonly TripRole[];
+  staff: boolean;
 };
+
+/** Le letture che servono anche allo staff (il viaggio, i suoi documenti). */
+export const MEMBERS_AND_STAFF = { staff: true } as const;

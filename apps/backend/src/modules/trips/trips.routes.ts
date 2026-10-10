@@ -13,7 +13,7 @@ import { logisticsRoutes } from '../logistics/logistics.routes.js';
 import { memoryRoutes } from '../memories/memories.routes.js';
 import { assertValidDates, countDays } from './days.js';
 import { generateInviteCode } from './invite-code.js';
-import { COORDINATOR_ONLY, TripParams, tripScope } from './trip-access.js';
+import { COORDINATOR_ONLY, MEMBERS_AND_STAFF, TripParams, tripScope } from './trip-access.js';
 import { crewInclude, loadTripDetail, visibleMediaWhere } from './trip-detail.js';
 import { lockTrip, seatsTaken } from './trip-lock.js';
 import { CreateTripBody, TripDetailResponse, TripSummaryDto, UpdateTripBody } from './trips.schemas.js';
@@ -84,9 +84,9 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
 
     trips.get(
       '/trips/:tripId',
-      { schema: { params: TripParams, response: { 200: TripDetailResponse } } },
+      { config: MEMBERS_AND_STAFF, schema: { params: TripParams, response: { 200: TripDetailResponse } } },
       async (request) => ({
-        trip: await loadTripDetail(app.prisma, request.trip.id, request.user.id, request.tripMember.role),
+        trip: await loadTripDetail(app.prisma, request.trip.id, request.user.id, request.tripRole),
       }),
     );
 
@@ -137,7 +137,7 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
         });
 
         return {
-          trip: await loadTripDetail(app.prisma, tripId, request.user.id, request.tripMember.role),
+          trip: await loadTripDetail(app.prisma, tripId, request.user.id, request.tripRole),
         };
       },
     );

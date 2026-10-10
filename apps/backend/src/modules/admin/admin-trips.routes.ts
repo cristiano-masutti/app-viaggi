@@ -4,12 +4,20 @@ import { z } from 'zod';
 import { TripRole } from '../../generated/prisma/enums.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import { addMember, assertNotLastCoordinator } from '../crew/membership.js';
-import { dayDate } from '../trips/days.js';
+import { generateInviteCode } from '../trips/invite-code.js';
 import { lockTrip } from '../trips/trip-lock.js';
 import { tripStatusWhere, utcToday } from '../trips/trip-status.js';
-import { adminTripInclude, passportStatus, searchWhere, toAdminTripSummary } from './admin-trips.js';
+import {
+  adminTripInclude,
+  loadAdminTripDetail,
+  memberRowSelect,
+  searchWhere,
+  toAdminMember,
+  toAdminTripSummary,
+} from './admin-trips.js';
 import {
   AddMemberBody,
+  AdminCreateTripBody,
   AdminMemberDto,
   AdminMemberParams,
   AdminTodayQuery,
@@ -19,45 +27,6 @@ import {
   AdminTripSummaryDto,
   UpdateMemberRoleBody,
 } from './admin.schemas.js';
-
-const memberRowSelect = {
-  userId: true,
-  role: true,
-  joinedAt: true,
-  user: {
-    select: {
-      firstName: true,
-      lastName: true,
-      username: true,
-      email: true,
-      passportNumber: true,
-      passportExpiry: true,
-    },
-  },
-} as const;
-
-const toAdminMember = (member: {
-  userId: string;
-  role: TripRole;
-  joinedAt: Date;
-  user: {
-    firstName: string;
-    lastName: string;
-    username: string | null;
-    email: string | null;
-    passportNumber: string | null;
-    passportExpiry: string | null;
-  };
-}) => ({
-  userId: member.userId,
-  firstName: member.user.firstName,
-  lastName: member.user.lastName,
-  username: member.user.username,
-  email: member.user.email,
-  role: member.role,
-  joinedAt: member.joinedAt,
-  passport: passportStatus(member.user),
-});
 
 export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
   /**
@@ -108,70 +77,48 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => {
-      const today = request.query.today ?? utcToday();
-      const { tripId } = request.params;
-
-      const [trip, memoriesByKind] = await Promise.all([
-        app.prisma.trip.findUnique({
-          where: { id: tripId },
-          include: {
-            ...adminTripInclude,
-            members: { ...adminTripInclude.members, select: memberRowSelect },
-            invitations: { where: { acceptedAt: null }, orderBy: [{ createdAt: 'asc' }, { name: 'asc' }] },
-            stays: { select: { dayIndex: true, name: true, address: true, documentId: true } },
-            activities: {
-              select: { id: true, dayIndex: true, name: true, place: true, documentId: true },
-              orderBy: [{ dayIndex: 'asc' }, { position: 'asc' }],
-            },
-            insurance: true,
-            customs: true,
-            transports: { orderBy: { position: 'asc' } },
-            emergencies: { orderBy: { position: 'asc' } },
-          },
-        }),
-        app.prisma.memory.groupBy({ by: ['kind'], where: { tripId }, _count: { _all: true } }),
-      ]);
+      const trip = await loadAdminTripDetail(
+        app.prisma,
+        request.params.tripId,
+        request.query.today ?? utcToday(),
+      );
       if (!trip) throw notFound('Trip');
+      return { trip };
+    },
+  );
 
-      const summary = toAdminTripSummary(trip, today);
-      const staysByDay = new Map(trip.stays.map((stay) => [stay.dayIndex, stay]));
-      const memories = (kind: string) => memoriesByKind.find((row) => row.kind === kind)?._count._all ?? 0;
+  /**
+   * Crea un viaggio con un coordinatore scelto fra le persone registrate: lo
+   * staff organizza, ma non entra nella crew.
+   */
+  app.post(
+    '/trips',
+    {
+      schema: {
+        body: AdminCreateTripBody,
+        querystring: AdminTodayQuery,
+        response: { 201: z.object({ trip: AdminTripDetailDto }) },
+      },
+    },
+    async (request, reply) => {
+      const { coordinatorUserId, ...fields } = request.body;
+      const coordinator = await app.prisma.user.findUnique({
+        where: { id: coordinatorUserId },
+        select: { id: true },
+      });
+      if (!coordinator) throw notFound('User');
 
-      return {
-        trip: {
-          ...summary,
-          inviteCode: trip.inviteCode,
-          createdAt: trip.createdAt,
-          crew: trip.members.map(toAdminMember),
-          invitations: trip.invitations,
-          days: Array.from({ length: summary.totalDays }, (_, offset) => {
-            const index = offset + 1;
-            const stay = staysByDay.get(index);
-            return {
-              index,
-              date: dayDate(trip.startDate, index),
-              stay: stay
-                ? { name: stay.name, address: stay.address, hasDocument: stay.documentId !== null }
-                : null,
-              activities: trip.activities
-                .filter((activity) => activity.dayIndex === index)
-                .map(({ id, name, place, documentId }) => ({
-                  id,
-                  name,
-                  place,
-                  hasDocument: documentId !== null,
-                })),
-            };
-          }),
-          logistics: {
-            insurance: trip.insurance,
-            customs: trip.customs,
-            transports: trip.transports,
-            emergencies: trip.emergencies,
-          },
-          memories: { photos: memories('photo'), videos: memories('video'), notes: memories('note') },
+      const created = await app.prisma.trip.create({
+        data: {
+          ...fields,
+          inviteCode: generateInviteCode(fields.title),
+          members: { create: { userId: coordinator.id, role: TripRole.coordinator } },
         },
-      };
+      });
+
+      request.log.info({ adminId: request.user.id, tripId: created.id }, 'Admin created a trip');
+      const trip = await loadAdminTripDetail(app.prisma, created.id, request.query.today ?? utcToday());
+      return reply.status(201).send({ trip: trip! });
     },
   );
 

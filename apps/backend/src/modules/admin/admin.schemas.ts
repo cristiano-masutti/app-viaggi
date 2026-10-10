@@ -4,6 +4,7 @@ import { TransportMode, TripRole } from '../../generated/prisma/enums.js';
 import { isoDate, isoDateTime } from '../../lib/schemas.js';
 import { InvitationDto } from '../crew/crew.schemas.js';
 import { TRIP_STATUSES } from '../trips/trip-status.js';
+import { CrewCapacity, Destination, Title, validDates } from '../trips/trips.schemas.js';
 import { READINESS_ISSUES } from './readiness.js';
 
 /**
@@ -177,3 +178,15 @@ export const CreateAccountResponse = z.object({
 
 export const AddMemberBody = z.object({ userId: z.uuid(), role: z.enum(TripRole).default('traveller') });
 export const UpdateMemberRoleBody = z.object({ role: z.enum(TripRole) });
+
+/** Un viaggio creato dallo staff: il coordinatore è una persona scelta, non chi lo crea. */
+export const AdminCreateTripBody = validDates(
+  z.object({
+    title: Title,
+    destination: Destination.optional(),
+    startDate: isoDate,
+    endDate: isoDate,
+    crewCapacity: CrewCapacity.optional(),
+    coordinatorUserId: z.uuid(),
+  }),
+);

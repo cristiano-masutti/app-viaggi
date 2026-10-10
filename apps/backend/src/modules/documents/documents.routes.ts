@@ -9,7 +9,7 @@ import { DOCUMENT_FILE_TYPES, extensionFor } from '../../lib/file-types.js';
 import { readUpload, requireFile } from '../../lib/multipart.js';
 import { parseOrThrow } from '../../lib/validation.js';
 import { removeStoredFiles } from '../../storage/cleanup.js';
-import { COORDINATOR_ONLY, TripParams } from '../trips/trip-access.js';
+import { COORDINATOR_ONLY, MEMBERS_AND_STAFF, TripParams } from '../trips/trip-access.js';
 import {
   DocumentDto,
   DocumentParams,
@@ -77,7 +77,7 @@ export const documentRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.get(
     '/trips/:tripId/documents/:documentId/url',
-    { schema: { params: DocumentParams, response: { 200: SignedUrlDto } } },
+    { config: MEMBERS_AND_STAFF, schema: { params: DocumentParams, response: { 200: SignedUrlDto } } },
     async (request) => {
       const { tripId, documentId } = request.params;
 

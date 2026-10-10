@@ -2553,6 +2553,892 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            admin: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                firstName: string;
+                                lastName: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    /** @description La data di oggi per chi guarda (decide in corso / futuri / passati). Senza: la data UTC. */
+                    today?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date */
+                            today: string;
+                            trips: {
+                                ongoing: number;
+                                upcoming: number;
+                                past: number;
+                            };
+                            activeTravellers: number;
+                            people: {
+                                total: number;
+                                withoutTrips: number;
+                            };
+                            seats: {
+                                taken: number;
+                                capacity: number;
+                            };
+                            memoriesThisWeek: number;
+                            departures: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                                destination: string | null;
+                                /** Format: date */
+                                startDate: string;
+                                /** Format: date */
+                                endDate: string;
+                                totalDays: number;
+                                /** @enum {string} */
+                                status: "ongoing" | "upcoming" | "past";
+                                crewCapacity: number | null;
+                                members: number;
+                                pendingInvitations: number;
+                                coordinators: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                }[];
+                                mediaCount: number;
+                                readiness: {
+                                    stays: {
+                                        covered: number;
+                                        needed: number;
+                                    };
+                                    insurance: boolean;
+                                    transport: boolean;
+                                    emergencyContacts: boolean;
+                                    passports: {
+                                        ready: number;
+                                        total: number;
+                                        expiring: number;
+                                    };
+                                    issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
+                                };
+                            }[];
+                            attention: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                                destination: string | null;
+                                /** Format: date */
+                                startDate: string;
+                                /** Format: date */
+                                endDate: string;
+                                totalDays: number;
+                                /** @enum {string} */
+                                status: "ongoing" | "upcoming" | "past";
+                                crewCapacity: number | null;
+                                members: number;
+                                pendingInvitations: number;
+                                coordinators: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                }[];
+                                mediaCount: number;
+                                readiness: {
+                                    stays: {
+                                        covered: number;
+                                        needed: number;
+                                    };
+                                    insurance: boolean;
+                                    transport: boolean;
+                                    emergencyContacts: boolean;
+                                    passports: {
+                                        ready: number;
+                                        total: number;
+                                        expiring: number;
+                                    };
+                                    issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
+                                };
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    status?: "ongoing" | "upcoming" | "past";
+                    q?: string;
+                    /** @description La data di oggi per chi guarda (decide in corso / futuri / passati). Senza: la data UTC. */
+                    today?: string;
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            trips: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                                destination: string | null;
+                                /** Format: date */
+                                startDate: string;
+                                /** Format: date */
+                                endDate: string;
+                                totalDays: number;
+                                /** @enum {string} */
+                                status: "ongoing" | "upcoming" | "past";
+                                crewCapacity: number | null;
+                                members: number;
+                                pendingInvitations: number;
+                                coordinators: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                }[];
+                                mediaCount: number;
+                                readiness: {
+                                    stays: {
+                                        covered: number;
+                                        needed: number;
+                                    };
+                                    insurance: boolean;
+                                    transport: boolean;
+                                    emergencyContacts: boolean;
+                                    passports: {
+                                        ready: number;
+                                        total: number;
+                                        expiring: number;
+                                    };
+                                    issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
+                                };
+                            }[];
+                            total: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: {
+                    /** @description La data di oggi per chi guarda (decide in corso / futuri / passati). Senza: la data UTC. */
+                    today?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        title: string;
+                        destination?: string;
+                        /** Format: date */
+                        startDate: string;
+                        /** Format: date */
+                        endDate: string;
+                        crewCapacity?: number;
+                        /** Format: uuid */
+                        coordinatorUserId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            trip: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                                destination: string | null;
+                                /** Format: date */
+                                startDate: string;
+                                /** Format: date */
+                                endDate: string;
+                                totalDays: number;
+                                /** @enum {string} */
+                                status: "ongoing" | "upcoming" | "past";
+                                crewCapacity: number | null;
+                                members: number;
+                                pendingInvitations: number;
+                                coordinators: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                }[];
+                                mediaCount: number;
+                                readiness: {
+                                    stays: {
+                                        covered: number;
+                                        needed: number;
+                                    };
+                                    insurance: boolean;
+                                    transport: boolean;
+                                    emergencyContacts: boolean;
+                                    passports: {
+                                        ready: number;
+                                        total: number;
+                                        expiring: number;
+                                    };
+                                    issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
+                                };
+                                inviteCode: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                crew: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                    username: string | null;
+                                    email: string | null;
+                                    /** @enum {string} */
+                                    role: "coordinator" | "traveller";
+                                    /** Format: date-time */
+                                    joinedAt: string;
+                                    passport: {
+                                        present: boolean;
+                                        expiry: string | null;
+                                    };
+                                }[];
+                                invitations: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    email: string | null;
+                                    /** Format: date-time */
+                                    createdAt: string;
+                                }[];
+                                days: {
+                                    index: number;
+                                    /** Format: date */
+                                    date: string;
+                                    stay: {
+                                        name: string;
+                                        address: string;
+                                        hasDocument: boolean;
+                                    } | null;
+                                    activities: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        place: string;
+                                        hasDocument: boolean;
+                                    }[];
+                                }[];
+                                logistics: {
+                                    insurance: {
+                                        company: string;
+                                        policy: string;
+                                        coverage: string;
+                                        emergencyPhone: string;
+                                    } | null;
+                                    customs: {
+                                        code: string;
+                                        note: string;
+                                    } | null;
+                                    transports: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        reference: string;
+                                        /** @enum {string} */
+                                        mode: "van" | "flight" | "ferry";
+                                    }[];
+                                    emergencies: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        title: string;
+                                        phone: string;
+                                    }[];
+                                };
+                                memories: {
+                                    photos: number;
+                                    videos: number;
+                                    notes: number;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/trips/{tripId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    /** @description La data di oggi per chi guarda (decide in corso / futuri / passati). Senza: la data UTC. */
+                    today?: string;
+                };
+                header?: never;
+                path: {
+                    tripId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            trip: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                                destination: string | null;
+                                /** Format: date */
+                                startDate: string;
+                                /** Format: date */
+                                endDate: string;
+                                totalDays: number;
+                                /** @enum {string} */
+                                status: "ongoing" | "upcoming" | "past";
+                                crewCapacity: number | null;
+                                members: number;
+                                pendingInvitations: number;
+                                coordinators: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                }[];
+                                mediaCount: number;
+                                readiness: {
+                                    stays: {
+                                        covered: number;
+                                        needed: number;
+                                    };
+                                    insurance: boolean;
+                                    transport: boolean;
+                                    emergencyContacts: boolean;
+                                    passports: {
+                                        ready: number;
+                                        total: number;
+                                        expiring: number;
+                                    };
+                                    issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
+                                };
+                                inviteCode: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                crew: {
+                                    /** Format: uuid */
+                                    userId: string;
+                                    firstName: string;
+                                    lastName: string;
+                                    username: string | null;
+                                    email: string | null;
+                                    /** @enum {string} */
+                                    role: "coordinator" | "traveller";
+                                    /** Format: date-time */
+                                    joinedAt: string;
+                                    passport: {
+                                        present: boolean;
+                                        expiry: string | null;
+                                    };
+                                }[];
+                                invitations: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    email: string | null;
+                                    /** Format: date-time */
+                                    createdAt: string;
+                                }[];
+                                days: {
+                                    index: number;
+                                    /** Format: date */
+                                    date: string;
+                                    stay: {
+                                        name: string;
+                                        address: string;
+                                        hasDocument: boolean;
+                                    } | null;
+                                    activities: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        place: string;
+                                        hasDocument: boolean;
+                                    }[];
+                                }[];
+                                logistics: {
+                                    insurance: {
+                                        company: string;
+                                        policy: string;
+                                        coverage: string;
+                                        emergencyPhone: string;
+                                    } | null;
+                                    customs: {
+                                        code: string;
+                                        note: string;
+                                    } | null;
+                                    transports: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        reference: string;
+                                        /** @enum {string} */
+                                        mode: "van" | "flight" | "ferry";
+                                    }[];
+                                    emergencies: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        title: string;
+                                        phone: string;
+                                    }[];
+                                };
+                                memories: {
+                                    photos: number;
+                                    videos: number;
+                                    notes: number;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/trips/{tripId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tripId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        userId: string;
+                        /**
+                         * @default traveller
+                         * @enum {string}
+                         */
+                        role?: "coordinator" | "traveller";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            member: {
+                                /** Format: uuid */
+                                userId: string;
+                                firstName: string;
+                                lastName: string;
+                                username: string | null;
+                                email: string | null;
+                                /** @enum {string} */
+                                role: "coordinator" | "traveller";
+                                /** Format: date-time */
+                                joinedAt: string;
+                                passport: {
+                                    present: boolean;
+                                    expiry: string | null;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/trips/{tripId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tripId: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tripId: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        role: "coordinator" | "traveller";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            member: {
+                                /** Format: uuid */
+                                userId: string;
+                                firstName: string;
+                                lastName: string;
+                                username: string | null;
+                                email: string | null;
+                                /** @enum {string} */
+                                role: "coordinator" | "traveller";
+                                /** Format: date-time */
+                                joinedAt: string;
+                                passport: {
+                                    present: boolean;
+                                    expiry: string | null;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                    /** @description La data di oggi per chi guarda (decide in corso / futuri / passati). Senza: la data UTC. */
+                    today?: string;
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            users: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                firstName: string;
+                                lastName: string;
+                                username: string | null;
+                                isAdmin: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                                tripCount: number;
+                                passport: {
+                                    present: boolean;
+                                    expiry: string | null;
+                                };
+                            }[];
+                            total: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                        firstName: string;
+                        lastName: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                firstName: string;
+                                lastName: string;
+                                username: string | null;
+                                isAdmin: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                                tripCount: number;
+                                passport: {
+                                    present: boolean;
+                                    expiry: string | null;
+                                };
+                            };
+                            temporaryPassword: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    /** @description La data di oggi per chi guarda (decide in corso / futuri / passati). Senza: la data UTC. */
+                    today?: string;
+                };
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                firstName: string;
+                                lastName: string;
+                                username: string | null;
+                                isAdmin: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                                tripCount: number;
+                                passport: {
+                                    present: boolean;
+                                    expiry: string | null;
+                                };
+                                trips: {
+                                    /** Format: uuid */
+                                    tripId: string;
+                                    title: string;
+                                    /** Format: date */
+                                    startDate: string;
+                                    /** Format: date */
+                                    endDate: string;
+                                    /** @enum {string} */
+                                    status: "ongoing" | "upcoming" | "past";
+                                    /** @enum {string} */
+                                    role: "coordinator" | "traveller";
+                                    /** Format: date-time */
+                                    joinedAt: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {

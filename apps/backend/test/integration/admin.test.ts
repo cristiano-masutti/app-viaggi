@@ -26,6 +26,7 @@ const ADMIN_ROUTES = [
   'GET /api/admin/session',
   'GET /api/admin/overview',
   'GET /api/admin/trips',
+  'POST /api/admin/trips',
   'GET /api/admin/trips/:tripId',
   'POST /api/admin/trips/:tripId/members',
   'PATCH /api/admin/trips/:tripId/members/:userId',
@@ -317,6 +318,57 @@ describe('trips', () => {
   it('answers 404 for a trip that does not exist', async () => {
     const { api } = await asAdmin();
     expect((await api.get(`/api/admin/trips/${randomUUID()}`)).statusCode).toBe(404);
+  });
+});
+
+describe('creating a trip', () => {
+  it('makes the chosen person its coordinator, without putting the staff in the crew', async () => {
+    const { api, admin } = await asAdmin();
+    const sofia = await createUser({ firstName: 'Sofia', lastName: 'Marchi' });
+
+    const response = await api.post(`/api/admin/trips?today=${TODAY}`, {
+      title: 'Norvegia Fiordi 🇳🇴',
+      destination: 'Norvegia',
+      startDate: '2027-11-02',
+      endDate: '2027-11-08',
+      crewCapacity: 8,
+      coordinatorUserId: sofia.id,
+    });
+
+    expect(response.statusCode).toBe(201);
+    const { trip } = response.json();
+    expect(trip).toMatchObject({
+      title: 'Norvegia Fiordi 🇳🇴',
+      status: 'upcoming',
+      totalDays: 7,
+      crewCapacity: 8,
+      members: 1,
+      coordinators: [{ userId: sofia.id }],
+      inviteCode: expect.stringMatching(/^norvegia-fiordi-/),
+    });
+    expect(await prisma.tripMember.count({ where: { tripId: trip.id, userId: admin.id } })).toBe(0);
+  });
+
+  it('refuses a coordinator who does not exist, and dates that go backwards', async () => {
+    const { api } = await asAdmin();
+    const sofia = await createUser();
+    const body = {
+      title: 'Norvegia',
+      startDate: '2027-11-08',
+      endDate: '2027-11-02',
+      coordinatorUserId: sofia.id,
+    };
+
+    expect((await api.post('/api/admin/trips', body)).statusCode).toBe(400);
+    expect(
+      (
+        await api.post('/api/admin/trips', {
+          ...body,
+          endDate: '2027-11-09',
+          coordinatorUserId: randomUUID(),
+        })
+      ).statusCode,
+    ).toBe(404);
   });
 });
 
