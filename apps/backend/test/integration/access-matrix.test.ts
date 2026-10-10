@@ -3,25 +3,68 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 import { createTestApp } from '../helpers/app.js';
-import { authHeaders } from '../helpers/auth.js';
+import { asUser } from '../helpers/client.js';
 import { prisma } from '../helpers/db.js';
-import { createTripWithCrew } from '../helpers/factories.js';
+import { createDocument, createMemory, createTripWithCrew } from '../helpers/factories.js';
+import { PDF } from '../helpers/files.js';
 
 type Who = 'coordinator' | 'traveller' | 'outsider';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+const MEMBERS: Who[] = ['coordinator', 'traveller'];
+const COORDINATOR: Who[] = ['coordinator'];
+/** I ricordi della fixture sono del viaggiatore: solo lui può modificarli. */
+const AUTHOR: Who[] = ['traveller'];
 
 /**
  * La tabella dei permessi di ogni route dentro un viaggio. Una route nuova
  * sotto /api/trips/:tripId senza una riga qui fa fallire il test: chi la
  * aggiunge deve decidere, per iscritto, chi può chiamarla.
  */
-const TRIP_ROUTES: Array<{ method: 'GET' | 'POST'; url: string; allowed: Who[] }> = [
-  { method: 'GET', url: '/api/trips/:tripId', allowed: ['coordinator', 'traveller'] },
-  { method: 'POST', url: '/api/trips/:tripId/assets', allowed: ['coordinator'] },
+const TRIP_ROUTES: Array<{ method: Method; url: string; allowed: Who[]; payload?: object }> = [
+  { method: 'GET', url: '/api/trips/:tripId', allowed: MEMBERS },
+  { method: 'PATCH', url: '/api/trips/:tripId', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId', allowed: COORDINATOR },
+
+  { method: 'POST', url: '/api/trips/:tripId/invitations', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId/invitations/:invitationId', allowed: COORDINATOR },
+  { method: 'PATCH', url: '/api/trips/:tripId/members/:userId', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId/members/:userId', allowed: COORDINATOR },
+  { method: 'POST', url: '/api/trips/:tripId/leave', allowed: MEMBERS },
+  { method: 'POST', url: '/api/trips/:tripId/invite-code', allowed: COORDINATOR },
+
+  { method: 'POST', url: '/api/trips/:tripId/documents', allowed: COORDINATOR },
+  { method: 'GET', url: '/api/trips/:tripId/documents/:documentId/url', allowed: MEMBERS },
+  { method: 'DELETE', url: '/api/trips/:tripId/documents/:documentId', allowed: COORDINATOR },
+
+  { method: 'PUT', url: '/api/trips/:tripId/days/:day/stay', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId/days/:day/stay', allowed: COORDINATOR },
+  { method: 'POST', url: '/api/trips/:tripId/days/:day/activities', allowed: COORDINATOR },
+  { method: 'PATCH', url: '/api/trips/:tripId/activities/:activityId', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId/activities/:activityId', allowed: COORDINATOR },
+
+  { method: 'POST', url: '/api/trips/:tripId/transports', allowed: COORDINATOR },
+  { method: 'PUT', url: '/api/trips/:tripId/transports/:transportId', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId/transports/:transportId', allowed: COORDINATOR },
+  { method: 'PUT', url: '/api/trips/:tripId/insurance', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId/insurance', allowed: COORDINATOR },
+  { method: 'PUT', url: '/api/trips/:tripId/customs', allowed: COORDINATOR },
+  { method: 'DELETE', url: '/api/trips/:tripId/customs', allowed: COORDINATOR },
+  { method: 'PUT', url: '/api/trips/:tripId/emergencies', allowed: COORDINATOR },
+
+  { method: 'GET', url: '/api/trips/:tripId/memories', allowed: MEMBERS },
+  { method: 'POST', url: '/api/trips/:tripId/memories', allowed: MEMBERS },
   {
-    method: 'GET',
-    url: '/api/trips/:tripId/assets/:assetId/signed-url',
-    allowed: ['coordinator', 'traveller'],
+    method: 'PATCH',
+    url: '/api/trips/:tripId/memories/:memoryId',
+    allowed: AUTHOR,
+    // Body valido: il controllo sull'autore arriva dopo la validazione.
+    payload: { caption: 'Cascata' },
   },
+  { method: 'DELETE', url: '/api/trips/:tripId/memories/:memoryId', allowed: AUTHOR },
+  { method: 'PUT', url: '/api/trips/:tripId/memories/:memoryId/reaction', allowed: MEMBERS },
+  { method: 'DELETE', url: '/api/trips/:tripId/memories/:memoryId/reaction', allowed: MEMBERS },
+  { method: 'GET', url: '/api/trips/:tripId/memories/:memoryId/media-url', allowed: MEMBERS },
 ];
 
 const EXPECTED_DENIAL: Record<Who, number> = {
@@ -31,19 +74,39 @@ const EXPECTED_DENIAL: Record<Who, number> = {
   outsider: 404,
 };
 
+/** Un viaggio con almeno una cosa per tipo, così ogni route ha qualcosa su cui agire. */
 async function setup() {
-  const { app, routes } = await createTestApp();
+  const { app, routes, storage } = await createTestApp();
   const crew = await createTripWithCrew();
-  const asset = await prisma.tripAsset.create({
-    data: {
-      tripId: crew.trip.id,
-      originalName: 'voucher.pdf',
-      mimeType: 'application/pdf',
-      sizeBytes: 4,
-      storagePath: `trips/${crew.trip.id}/voucher.pdf`,
-    },
+  const tripId = crew.trip.id;
+
+  const document = await createDocument(tripId);
+  const memory = await createMemory(tripId, crew.traveller.id, { kind: 'photo' });
+  for (const path of [document.storagePath, memory.storagePath]) {
+    storage.objects.set(path!, { body: PDF, contentType: 'application/pdf' });
+  }
+  await prisma.stay.create({ data: { tripId, dayIndex: 1, name: 'Hotel Kría', address: 'Vík' } });
+  await prisma.insurance.create({ data: { tripId, company: 'Europ Assistance', policy: 'VM-1' } });
+  await prisma.customs.create({ data: { tripId, code: 'KEF-1' } });
+  const activity = await prisma.activity.create({
+    data: { tripId, dayIndex: 1, name: 'Trekking', place: 'Sólheimajökull', position: 0 },
   });
-  const url = (template: string) => template.replace(':tripId', crew.trip.id).replace(':assetId', asset.id);
+  const transport = await prisma.transport.create({
+    data: { tripId, name: 'Van 4x4', mode: 'van', position: 0 },
+  });
+  const invitation = await prisma.tripInvitation.create({ data: { tripId, name: 'Aisha' } });
+
+  const ids: Record<string, string> = {
+    tripId,
+    day: '1',
+    userId: crew.traveller.id,
+    documentId: document.id,
+    memoryId: memory.id,
+    activityId: activity.id,
+    transportId: transport.id,
+    invitationId: invitation.id,
+  };
+  const url = (template: string) => template.replace(/:(\w+)/g, (_, key: string) => ids[key] ?? `:${key}`);
 
   return { app, routes, crew, url };
 }
@@ -66,16 +129,16 @@ describe('trip access matrix', () => {
 
       it(`${route.method} ${route.url}: ${who} is ${allowed ? 'allowed' : 'denied'}`, async () => {
         const { app, crew, url } = await setup();
+        const api = await asUser(app, crew[who]);
 
-        const response = await app.inject({
-          method: route.method,
-          url: url(route.url),
-          headers: await authHeaders(crew[who]),
-        });
+        const call = api[route.method.toLowerCase() as Lowercase<Method>];
+        const response = await call(url(route.url), route.payload);
 
         if (allowed) {
           // Superato il controllo d'accesso: qualunque esito tranne un rifiuto.
-          expect([401, 403, 404]).not.toContain(response.statusCode);
+          expect({ status: response.statusCode, body: response.body }).not.toMatchObject({
+            status: expect.toBeOneOf([401, 403, 404]),
+          });
         } else {
           expect(response.statusCode).toBe(EXPECTED_DENIAL[who]);
         }
@@ -85,10 +148,10 @@ describe('trip access matrix', () => {
 
   it('answers 404 for a trip that does not exist, like for one that is not yours', async () => {
     const { app, crew } = await setup();
-    const headers = await authHeaders(crew.coordinator);
+    const api = await asUser(app, crew.coordinator);
 
     for (const tripId of [randomUUID(), 'not-a-uuid']) {
-      const response = await app.inject({ method: 'GET', url: `/api/trips/${tripId}`, headers });
+      const response = await api.get(`/api/trips/${tripId}`);
       expect(response.statusCode).toBe(404);
       expect(response.json().error.code).toBe('NOT_FOUND');
     }
@@ -96,15 +159,12 @@ describe('trip access matrix', () => {
 
   it('explains a denied action to a member with 403 FORBIDDEN', async () => {
     const { app, crew, url } = await setup();
+    const api = await asUser(app, crew.traveller);
 
-    const response = await app.inject({
-      method: 'POST',
-      url: url('/api/trips/:tripId/assets'),
-      headers: await authHeaders(crew.traveller),
-    });
+    const response = await api.put(url('/api/trips/:tripId/insurance'), { company: 'X', policy: 'Y' });
 
     expect(response.json()).toEqual({
-      error: { code: 'FORBIDDEN', message: 'This action requires one of the roles: COORDINATOR' },
+      error: { code: 'FORBIDDEN', message: 'This action requires one of the roles: coordinator' },
     });
   });
 });

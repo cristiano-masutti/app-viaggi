@@ -1,169 +1,305 @@
 import { describe, expect, it } from 'vitest';
 
-import { TripRole } from '../../src/generated/prisma/enums.js';
 import { createTestApp } from '../helpers/app.js';
-import { authHeaders, newAuthUser } from '../helpers/auth.js';
+import { newAuthUser } from '../helpers/auth.js';
+import { asUser } from '../helpers/client.js';
 import { prisma } from '../helpers/db.js';
-import { createTrip, createTripWithCrew, createUser } from '../helpers/factories.js';
+import {
+  createDocument,
+  createMemory,
+  createTrip,
+  createTripWithCrew,
+  createUser,
+} from '../helpers/factories.js';
 
-const validTrip = {
+const draft = {
   title: 'Perù & Machu Picchu 🇵🇪',
   destination: 'Perù',
   startDate: '2026-12-13',
-  endDate: '2026-12-27',
+  endDate: '2026-12-17',
+  crewCapacity: 10,
+  invitees: [{ name: 'Aisha B.', email: 'Aisha.B@Gmail.com' }, { name: 'Tea F.' }],
+  emergencies: [
+    {
+      title: '📣 Sofia • Coordinatore',
+      actionLabel: 'Chiama il coordinatore',
+      phone: '+39 333 123 4567',
+      whatsapp: true,
+    },
+    { title: '🚨 112', actionLabel: 'Chiama 112', phone: '112' },
+  ],
 };
 
 describe('POST /api/trips', () => {
-  it('creates the trip with its creator as coordinator', async () => {
-    const user = newAuthUser();
+  it('creates the trip from the CreateTripScreen draft, with the creator as coordinator', async () => {
+    const user = await createUser({ firstName: 'Sofia', lastName: 'Marchi' });
     const { app } = await createTestApp();
+    const api = await asUser(app, user);
 
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/trips',
-      headers: await authHeaders(user),
-      payload: validTrip,
-    });
+    const response = await api.post('/api/trips', draft);
 
     expect(response.statusCode).toBe(201);
     const { trip } = response.json();
-    expect(trip).toEqual({
-      id: expect.any(String),
-      ...validTrip,
-      myRole: 'COORDINATOR',
-      assetCount: 0,
-      createdAt: expect.any(String),
-      updatedAt: expect.any(String),
+    expect(trip).toMatchObject({
+      title: draft.title,
+      destination: 'Perù',
+      startDate: '2026-12-13',
+      endDate: '2026-12-17',
+      totalDays: 5,
+      crewCapacity: 10,
+      myRole: 'coordinator',
+      crew: [{ userId: user.id, firstName: 'Sofia', lastName: 'Marchi', role: 'coordinator' }],
+      invitations: [
+        { name: 'Aisha B.', email: 'aisha.b@gmail.com' },
+        { name: 'Tea F.', email: null },
+      ],
+      emergencies: [
+        { title: '📣 Sofia • Coordinatore', phone: '+393331234567', whatsapp: true },
+        { title: '🚨 112', phone: '112', whatsapp: false },
+      ],
+      documents: { passport: null, customs: null, transports: [], insurance: null },
     });
-
-    const stored = await prisma.trip.findUniqueOrThrow({
-      where: { id: trip.id },
-      include: { members: true },
-    });
-    expect(stored.startDate.toISOString()).toBe('2026-12-13T00:00:00.000Z');
-    expect(stored.endDate.toISOString()).toBe('2026-12-27T00:00:00.000Z');
-    expect(stored.members).toEqual([
-      expect.objectContaining({ userId: user.id, role: TripRole.COORDINATOR }),
+    expect(trip.inviteCode).toMatch(/^peru-machu-picchu-[a-z2-9]{12}$/);
+    expect(trip.days.map((day: { index: number; date: string }) => [day.index, day.date])).toEqual([
+      [1, '2026-12-13'],
+      [2, '2026-12-14'],
+      [3, '2026-12-15'],
+      [4, '2026-12-16'],
+      [5, '2026-12-17'],
     ]);
+    expect(
+      trip.days.every(
+        (day: { stay: unknown; activities: unknown[] }) => !day.stay && day.activities.length === 0,
+      ),
+    ).toBe(true);
   });
 
-  it('trims text fields and ignores unknown ones', async () => {
+  it('creates a trip from the minimal draft', async () => {
     const { app } = await createTestApp();
+    const api = await asUser(app, newAuthUser());
 
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/trips',
-      headers: await authHeaders(newAuthUser()),
-      payload: { ...validTrip, title: '  Perù  ', id: '00000000-0000-0000-0000-000000000000' },
+    const response = await api.post('/api/trips', {
+      title: 'Weekend',
+      startDate: '2026-11-07',
+      endDate: '2026-11-08',
     });
 
     expect(response.statusCode).toBe(201);
-    const { trip } = response.json();
-    expect(trip.title).toBe('Perù');
-    expect(trip.id).not.toBe('00000000-0000-0000-0000-000000000000');
+    expect(response.json().trip).toMatchObject({
+      destination: null,
+      crewCapacity: null,
+      invitations: [],
+      emergencies: [],
+    });
   });
 
-  it('rejects an end date before the start date with a VALIDATION_ERROR on endDate', async () => {
+  it.each([
+    ['an end before the start', { endDate: '2026-12-01' }, '/endDate'],
+    ['a trip longer than a year', { endDate: '2028-01-01' }, '/endDate'],
+    [
+      'an invalid phone number',
+      { emergencies: [{ title: 'X', actionLabel: 'Chiama', phone: 'chiamami' }] },
+      '/emergencies/0/phone',
+    ],
+    ['an invalid invitee email', { invitees: [{ name: 'Aisha', email: 'aisha' }] }, '/invitees/0/email'],
+    ['a capacity of zero', { crewCapacity: 0 }, '/crewCapacity'],
+  ])('rejects %s', async (_case, change, path) => {
     const { app } = await createTestApp();
+    const api = await asUser(app, newAuthUser());
 
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/trips',
-      headers: await authHeaders(newAuthUser()),
-      payload: { ...validTrip, endDate: '2026-12-01' },
-    });
+    const response = await api.post('/api/trips', { ...draft, ...change });
 
     expect(response.statusCode).toBe(400);
-    expect(response.json()).toEqual({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid request body',
-        details: [{ path: '/endDate', message: 'endDate must be on or after startDate' }],
-      },
-    });
+    expect(response.json().error.details).toContainEqual(expect.objectContaining({ path }));
     expect(await prisma.trip.count()).toBe(0);
-  });
-
-  it('reports every invalid field at once', async () => {
-    const { app } = await createTestApp();
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/trips',
-      headers: await authHeaders(newAuthUser()),
-      payload: { title: 'A', startDate: '13/12/2026' },
-    });
-
-    expect(response.statusCode).toBe(400);
-    const paths = response.json().error.details.map((issue: { path: string }) => issue.path);
-    expect(paths).toEqual(expect.arrayContaining(['/title', '/destination', '/startDate', '/endDate']));
   });
 });
 
 describe('GET /api/trips', () => {
-  it('returns an empty list to a user without trips', async () => {
-    const { app } = await createTestApp();
-    await createTripWithCrew();
-
-    const response = await app.inject({
-      method: 'GET',
-      url: '/api/trips',
-      headers: await authHeaders(newAuthUser()),
+  it('lists only my trips, latest departure first, with my role and counters', async () => {
+    const me = await createUser();
+    const friend = await createUser();
+    const past = await createTrip({
+      title: 'Marocco Express 🇲🇦',
+      startDate: new Date('2026-03-01'),
+      endDate: new Date('2026-03-08'),
+      members: [
+        { user: me, role: 'traveller' },
+        { user: friend, role: 'coordinator' },
+      ],
     });
+    const next = await createTrip({
+      title: 'Giappone Discovery 🇯🇵',
+      startDate: new Date('2026-11-01'),
+      endDate: new Date('2026-11-12'),
+      members: [{ user: me, role: 'coordinator' }],
+    });
+    await createTrip({ title: 'Non mio', members: [{ user: friend, role: 'coordinator' }] });
+    await createMemory(past.id, friend.id, { kind: 'photo' });
+    await createMemory(past.id, friend.id, { kind: 'photo', visibility: 'private' });
+    await createMemory(past.id, me.id, { kind: 'video', visibility: 'private' });
+    await createMemory(past.id, me.id);
+    const { app } = await createTestApp();
+
+    const response = await (await asUser(app, me)).get('/api/trips');
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ trips: [] });
-  });
-
-  it('lists only my trips, most recent first, with my role and the asset count', async () => {
-    const me = await createUser();
-    const someoneElse = await createUser();
-    const older = await createTrip({
-      title: 'Marocco Express 🇲🇦',
-      createdAt: new Date('2026-01-01T10:00:00Z'),
-      members: [{ user: me, role: TripRole.TRAVELLER }],
-    });
-    const newer = await createTrip({
-      title: 'Portogallo Surf 🇵🇹',
-      createdAt: new Date('2026-02-01T10:00:00Z'),
-      members: [{ user: me, role: TripRole.COORDINATOR }],
-    });
-    await createTrip({ title: 'Non mio', members: [{ user: someoneElse, role: TripRole.COORDINATOR }] });
-    await prisma.tripAsset.createMany({
-      data: [1, 2].map((n) => ({
-        tripId: older.id,
-        originalName: `voucher-${n}.pdf`,
-        mimeType: 'application/pdf',
-        sizeBytes: 100,
-        storagePath: `trips/${older.id}/voucher-${n}.pdf`,
-      })),
-    });
-    const { app } = await createTestApp();
-
-    const response = await app.inject({ method: 'GET', url: '/api/trips', headers: await authHeaders(me) });
-
-    const { trips } = response.json();
-    expect(
-      trips.map(({ id, myRole, assetCount }: Record<string, unknown>) => ({ id, myRole, assetCount })),
-    ).toEqual([
-      { id: newer.id, myRole: 'COORDINATOR', assetCount: 0 },
-      { id: older.id, myRole: 'TRAVELLER', assetCount: 2 },
+    expect(response.json().trips).toEqual([
+      expect.objectContaining({
+        id: next.id,
+        myRole: 'coordinator',
+        totalDays: 12,
+        crewCount: 1,
+        mediaCount: 0,
+      }),
+      // La foto privata dell'amico non si conta; il mio video privato sì; la nota non è un media.
+      expect.objectContaining({
+        id: past.id,
+        myRole: 'traveller',
+        totalDays: 8,
+        crewCount: 2,
+        mediaCount: 2,
+      }),
     ]);
   });
 });
 
 describe('GET /api/trips/:tripId', () => {
-  it('returns the trip to a member, with their own role', async () => {
-    const { trip, traveller } = await createTripWithCrew();
+  it('returns the whole trip, with my own passport and no private data about the crew', async () => {
+    const { trip, coordinator, traveller } = await createTripWithCrew();
+    await prisma.user.update({
+      where: { id: traveller.id },
+      data: {
+        passportNumber: 'YA9182773',
+        passportExpiry: '04/2029',
+        medicalNotes: 'Allergia alle arachidi',
+      },
+    });
+    await prisma.user.update({
+      where: { id: coordinator.id },
+      data: { passportNumber: 'AA0000001', passportExpiry: '01/2030' },
+    });
     const { app } = await createTestApp();
 
-    const response = await app.inject({
-      method: 'GET',
-      url: `/api/trips/${trip.id}`,
-      headers: await authHeaders(traveller),
+    const response = await (await asUser(app, traveller)).get(`/api/trips/${trip.id}`);
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.trip).toMatchObject({
+      myRole: 'traveller',
+      totalDays: 10,
+      documents: { passport: { number: 'YA9182773', expiry: '04/2029', hasPhoto: false } },
+    });
+    expect(body.trip.days).toHaveLength(10);
+    expect(body.trip.crew.map((member: { role: string }) => member.role)).toEqual([
+      'coordinator',
+      'traveller',
+    ]);
+    for (const secret of ['AA0000001', 'Allergia', coordinator.email!, traveller.email!]) {
+      expect(response.body).not.toContain(secret);
+    }
+  });
+});
+
+describe('PATCH /api/trips/:tripId', () => {
+  it('updates the details and moves the whole programme with the dates', async () => {
+    const { trip, coordinator } = await createTripWithCrew();
+    await prisma.stay.create({ data: { tripId: trip.id, dayIndex: 3, name: 'Hotel Kría', address: 'Vík' } });
+    const { app } = await createTestApp();
+
+    const response = await (
+      await asUser(app, coordinator)
+    ).patch(`/api/trips/${trip.id}`, {
+      title: 'Islanda in inverno',
+      startDate: '2026-12-01',
+      endDate: '2026-12-10',
+      crewCapacity: null,
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json().trip).toMatchObject({ id: trip.id, title: trip.title, myRole: 'TRAVELLER' });
+    const updated = response.json().trip;
+    expect(updated).toMatchObject({
+      title: 'Islanda in inverno',
+      startDate: '2026-12-01',
+      crewCapacity: null,
+    });
+    // Il giorno 3 resta il giorno 3: cambia solo la sua data.
+    expect(updated.days[2]).toMatchObject({ index: 3, date: '2026-12-03', stay: { name: 'Hotel Kría' } });
+  });
+
+  it('refuses to cut days that already have content', async () => {
+    const { trip, coordinator, traveller } = await createTripWithCrew();
+    await createMemory(trip.id, traveller.id, { dayIndex: 8 });
+    const { app } = await createTestApp();
+
+    const response = await (
+      await asUser(app, coordinator)
+    ).patch(`/api/trips/${trip.id}`, { endDate: '2026-09-20' });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toMatchObject({
+      code: 'DAYS_HAVE_CONTENT',
+      details: { lastDayWithContent: 8 },
+    });
+  });
+
+  it('allows cutting empty days', async () => {
+    const { trip, coordinator, traveller } = await createTripWithCrew();
+    await createMemory(trip.id, traveller.id, { dayIndex: 7 });
+    const { app } = await createTestApp();
+
+    const response = await (
+      await asUser(app, coordinator)
+    ).patch(`/api/trips/${trip.id}`, { endDate: '2026-09-20' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().trip.totalDays).toBe(7);
+  });
+
+  it('checks the merged dates: a new start after the current end is refused', async () => {
+    const { trip, coordinator } = await createTripWithCrew();
+    const { app } = await createTestApp();
+
+    const response = await (
+      await asUser(app, coordinator)
+    ).patch(`/api/trips/${trip.id}`, { startDate: '2026-10-01' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.details).toEqual([
+      { path: '/endDate', message: 'endDate must be on or after startDate' },
+    ]);
+  });
+
+  it('refuses a capacity below the current crew', async () => {
+    const { trip, coordinator } = await createTripWithCrew();
+    const { app } = await createTestApp();
+
+    const response = await (
+      await asUser(app, coordinator)
+    ).patch(`/api/trips/${trip.id}`, { crewCapacity: 1 });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toMatchObject({ code: 'CAPACITY_BELOW_CREW', details: { crewCount: 2 } });
+  });
+});
+
+describe('DELETE /api/trips/:tripId', () => {
+  it('deletes the trip for everyone, with all its files', async () => {
+    const { trip, coordinator, traveller } = await createTripWithCrew();
+    const document = await createDocument(trip.id);
+    const photo = await createMemory(trip.id, traveller.id, { kind: 'photo' });
+    const { app, storage } = await createTestApp();
+    for (const path of [document.storagePath!, photo.storagePath!]) {
+      storage.objects.set(path, { body: Buffer.from('x'), contentType: 'image/jpeg' });
+    }
+
+    const response = await (await asUser(app, coordinator)).delete(`/api/trips/${trip.id}`);
+
+    expect(response.statusCode).toBe(204);
+    expect(await prisma.trip.count()).toBe(0);
+    expect(await prisma.memory.count()).toBe(0);
+    expect(storage.objects.size).toBe(0);
+    // Gli utenti restano: perdono solo il viaggio.
+    expect(await prisma.user.count()).toBe(3);
   });
 });

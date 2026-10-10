@@ -32,11 +32,21 @@ src/
 │   └── authenticate.ts       hook su tutto /api: token → request.user, crea l'utente al primo accesso
 ├── lib/
 │   ├── errors.ts             AppError + error handler, formato unico degli errori
+│   ├── file-types.ts         riconoscimento del tipo di file dai primi byte
+│   ├── multipart.ts          lettura di un upload (campi + un file) con controllo del tipo
+│   ├── pagination.ts         cursori opachi (createdAt, id)
 │   ├── prisma.ts             PrismaClient con driver adapter pg
-│   └── schemas.ts            codec zod condivisi (date)
-├── storage/                  interfaccia ObjectStorage + implementazione Supabase
-├── modules/<dominio>/        <dominio>.routes.ts + <dominio>.schemas.ts
-│   └── trips/trip-access.ts  tripScope(): membership e ruolo per le route /trips/:tripId/...
+│   ├── schemas.ts            codec zod condivisi (date)
+│   └── validation.ts         parseOrThrow(): stessa validazione fuori dallo schema della route
+├── storage/                  interfaccia ObjectStorage, Supabase, pulizia dei file dopo il commit
+├── modules/
+│   ├── me/                   profilo e Passaporto Master
+│   ├── trips/                viaggi, giorni, link di invito, tripScope() (permessi), dettaglio
+│   ├── crew/                 membri, ruoli, posti riservati, ingresso col link
+│   ├── documents/            upload dei documenti e collegamento agli slot
+│   ├── itinerary/            alloggio e attività di ogni giorno
+│   ├── logistics/            trasporti, assicurazione, dogana, card SOS
+│   └── memories/             foto, video, note di diario, reazioni
 └── generated/prisma/         client generato da `prisma generate` (non versionato)
 prisma/
 ├── schema.prisma
@@ -44,8 +54,47 @@ prisma/
 test/
 ├── unit/                     funzioni pure, senza database
 ├── integration/              API vera via app.inject() su Postgres vero
-└── helpers/                  createTestApp, factory, storage in memoria, token firmati
+└── helpers/                  createTestApp, asUser, factory, file campione, storage in memoria, token
 ```
+
+### Il modello
+
+Lo specchio è [`apps/mobile/src/types/index.ts`](../mobile/src/types/index.ts):
+stessi nomi e stessi valori degli enum (`coordinator`, `photo`, `crew`…, in
+minuscolo dal database all'API). Il server non calcola ciò che dipende
+dall'orologio del telefono (`status`, `currentDay`, `'16 Set'`, `'18:42'`):
+manda date ISO e il client le presenta.
+
+- **Giorni.** Un viaggio è G1…Gn, ricavati da `startDate`/`endDate`; non c'è
+  una tabella dei giorni. Alloggi, attività e ricordi si agganciano a
+  `dayIndex`: spostare le date sposta il programma, e accorciare il viaggio è
+  rifiutato (`409 DAYS_HAVE_CONTENT`) se taglierebbe giorni con contenuti.
+- **Documenti in due passi.** Prima `POST …/documents` (il file, oppure un QR
+  senza file) restituisce un id; poi lo si collega allo slot passando
+  `documentId` nel body (alloggio, attività, mezzo, polizza, dogana).
+  `undefined` lascia il documento com'è, `null` lo stacca, un id lo sostituisce.
+  Un documento vive in un solo slot (`409 DOCUMENT_UNAVAILABLE` altrimenti) e
+  quando viene staccato o sostituito sparisce con il suo file.
+- **File.** Il tipo si riconosce dal contenuto, non dal content-type del
+  client: un HTML rinominato `.pdf` riceve `415`. I file vanno nel bucket
+  privato e si aprono solo con URL firmati a scadenza. Se lo storage fallisce
+  dopo il commit, il file resta orfano e finisce nei log, ma il database non
+  punta mai a un file che non esiste.
+- **Passaporto.** È uno per persona (Passaporto Master) e sta nel profilo; nel
+  dettaglio viaggio `documents.passport` è quello di chi chiede.
+- **Crew e inviti.** Il link `vibemakers.travel/join/<inviteCode>` ha circa 59
+  bit casuali e fa entrare come viaggiatore, entro `crewCapacity` (`409
+  TRIP_FULL`, garantito anche con ingressi simultanei). I posti riservati
+  (`invitations`) si chiudono da soli quando entra qualcuno con la stessa email.
+  Il coordinatore può rigenerare il link (quello vecchio smette subito di
+  funzionare). Un viaggio non resta mai senza coordinatore (`409 LAST_COORDINATOR`).
+- **Ricordi.** `crew` li vede tutto il gruppo, `private` solo l'autore (per
+  gli altri è `404`). Solo l'autore li modifica o cancella. Una nota privata è
+  sempre `personal`. Una reazione per persona, solo su foto e video. La lista è
+  a pagine con cursore, dal più recente.
+- **Profilo.** Lo legge solo il proprietario. Ai compagni di viaggio arrivano
+  nome, cognome e username, mai email, codice fiscale, passaporto, dieta o note
+  mediche.
 
 ### Le regole
 
@@ -88,7 +137,7 @@ registra dentro `tripScope()`, che prima di leggere il body controlla che
 l'utente sia membro del viaggio e che il suo ruolo sia ammesso:
 
 ```ts
-app.post('/trips/:tripId/assets', { config: { tripRoles: [TripRole.COORDINATOR] }, … })
+app.put('/trips/:tripId/insurance', { config: COORDINATOR_ONLY, … })
 ```
 
 Senza `tripRoles` la route è aperta a ogni membro. Chi non è membro riceve
@@ -97,9 +146,13 @@ membro senza il ruolo giusto riceve **403 FORBIDDEN**.
 
 | Azione | Coordinatore | Viaggiatore | Non membro |
 | --- | --- | --- | --- |
-| Vedere il viaggio | ✅ | ✅ | 404 |
-| Caricare un documento | ✅ | 403 | 404 |
-| Aprire un documento (URL firmato) | ✅ | ✅ | 404 |
+| Vedere il viaggio, aprire i documenti | ✅ | ✅ | 404 |
+| Modificare viaggio, programma, documenti fissi | ✅ | 403 | 404 |
+| Gestire crew, posti riservati, link di invito | ✅ | 403 | 404 |
+| Cancellare il viaggio | ✅ | 403 | 404 |
+| Uscire dal viaggio | ✅ (se non è l'ultimo coordinatore) | ✅ | 404 |
+| Pubblicare ricordi e reagire | ✅ | ✅ | 404 |
+| Modificare o cancellare un ricordo | solo l'autore | solo l'autore | 404 |
 
 Chi crea un viaggio ne diventa coordinatore. La tabella vive anche in
 `test/integration/access-matrix.test.ts`: una route nuova sotto
@@ -175,17 +228,39 @@ allo schema → test con coverage → build.
 ## API
 
 Tutto quello che sta sotto `/api` richiede `Authorization: Bearer <access token>`.
+`C` = coordinatore, `M` = qualunque membro, `A` = autore del ricordo.
+Le route del viaggio iniziano tutte con `/api/trips/:tripId` (qui `…`).
 
 | Metodo | Percorso | Chi | Note |
 | --- | --- | --- | --- |
-| `GET` | `/health` | pubblico | liveness |
-| `GET` | `/health/ready` | pubblico | readiness (database) |
-| `GET` | `/api/me` | utente | l'utente del token |
-| `GET` | `/api/trips` | utente | i **miei** viaggi, dal più recente, con `myRole` e `assetCount` |
-| `POST` | `/api/trips` | utente | `{ title, destination, startDate, endDate }`, date `YYYY-MM-DD`; chi crea è coordinatore |
-| `GET` | `/api/trips/:tripId` | membro | dettaglio con `myRole` |
-| `POST` | `/api/trips/:tripId/assets` | coordinatore | multipart, un file nel campo `file`; max `UPLOAD_MAX_BYTES` |
-| `GET` | `/api/trips/:tripId/assets/:assetId/signed-url` | membro | URL firmato, valido `SIGNED_URL_TTL_SECONDS` |
+| `GET` | `/health`, `/health/ready` | pubblico | liveness, readiness |
+| `GET` `PATCH` | `/api/me` | utente | profilo; `passport: null` cancella anche la foto |
+| `PUT` `DELETE` | `/api/me/passport/photo` | utente | scansione (immagine o PDF) |
+| `GET` | `/api/me/passport/photo/url` | utente | URL firmato |
+| `GET` | `/api/trips` | utente | i **miei** viaggi: `myRole`, `totalDays`, `crewCount`, `mediaCount` |
+| `POST` | `/api/trips` | utente | bozza di `CreateTripScreen` (+ `invitees`, `emergencies`); chi crea è `C` |
+| `GET` `POST` | `/api/invites/:code`, `/api/invites/:code/accept` | utente | anteprima e ingresso col link |
+| `GET` | `…` | M | viaggio completo: crew, giorni, documenti, SOS |
+| `PATCH` `DELETE` | `…` | C | modifica (date comprese) e cancellazione |
+| `POST` `DELETE` | `…/invitations`, `…/invitations/:id` | C | posti riservati |
+| `PATCH` `DELETE` | `…/members/:userId` | C | ruolo, rimozione |
+| `POST` | `…/leave` | M | esci dal viaggio |
+| `POST` | `…/invite-code` | C | nuovo link, il vecchio smette di funzionare |
+| `POST` | `…/documents` | C | multipart (file + `title`, `subtitle`, `code`) o JSON per un QR |
+| `GET` | `…/documents/:id/url` | M | URL firmato |
+| `DELETE` | `…/documents/:id` | C | solo se non collegato a uno slot |
+| `PUT` `DELETE` | `…/days/:day/stay` | C | alloggio del giorno |
+| `POST` | `…/days/:day/activities` | C | nuova attività in fondo alla giornata |
+| `PATCH` `DELETE` | `…/activities/:id` | C | anche spostamento di giorno |
+| `POST` | `…/transports` | C | mezzo con i suoi documenti |
+| `PUT` `DELETE` | `…/transports/:id` | C | sostituzione completa (documenti compresi) |
+| `PUT` `DELETE` | `…/insurance`, `…/customs` | C | |
+| `PUT` | `…/emergencies` | C | card SOS in blocco, nell'ordine dato |
+| `GET` | `…/memories` | M | `?day=&author=me\|<id>&kind=media\|note&cursor=&limit=` |
+| `POST` | `…/memories` | M | nota in JSON, foto/video in multipart |
+| `PATCH` `DELETE` | `…/memories/:id` | A | testo della nota o didascalia |
+| `PUT` `DELETE` | `…/memories/:id/reaction` | M | `fire`, `laugh`, `love`, `mindblown` |
+| `GET` | `…/memories/:id/media-url` | M | URL firmato |
 
 ## Variabili d'ambiente
 
@@ -208,12 +283,18 @@ Vedi [`.env.example`](./.env.example); lo schema completo, con i default, è in
 
 ## Cosa manca prima della produzione
 
-- **Modello dati del dominio.** Il contratto da raggiungere è
-  [`apps/mobile/src/types/index.ts`](../mobile/src/types/index.ts): profilo,
-  crew con **inviti** (oggi l'unico membro di un viaggio è chi lo crea),
-  giorni, documenti, ricordi.
+- **Dati sanitari e documenti d'identità** (note mediche, passaporto, codice
+  fiscale): oggi sono protetti dai permessi e dalla cifratura del disco del
+  database. Per il GDPR (art. 9) vanno valutati consenso esplicito e cifratura
+  a livello di colonna.
 - **Account:** cancellazione dell'utente (GDPR) propagata da Supabase.
-- **Hardening:** rate limiting, allowlist dei MIME type in upload, paginazione
-  delle liste, OpenAPI generata dagli schemi zod.
+- **Media pesanti:** copertine e avatar (servono un bucket pubblico o URL
+  firmati nelle liste); video grandi caricati direttamente su Supabase con un
+  URL firmato di upload, invece che attraverso l'API (oggi il limite è
+  `UPLOAD_MAX_BYTES` per tutto).
+- **Pulizia:** un job che cancelli i documenti caricati e mai collegati a uno
+  slot, e i file rimasti orfani per un errore dello storage.
+- **Hardening:** rate limiting (soprattutto su `/api/invites`), OpenAPI
+  generata dagli schemi zod per il client del mobile.
 - **Deploy:** Dockerfile, ambiente di staging, `prisma migrate deploy` nella
   pipeline di rilascio, error tracking.

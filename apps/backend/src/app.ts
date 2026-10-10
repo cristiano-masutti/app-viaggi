@@ -11,6 +11,7 @@ import type { AppConfig } from './config/env.js';
 import { registerErrorHandling } from './lib/errors.js';
 import type { PrismaClient } from './lib/prisma.js';
 import { healthRoutes } from './modules/health/health.routes.js';
+import { inviteRoutes } from './modules/crew/invites.routes.js';
 import { meRoutes } from './modules/me/me.routes.js';
 import { tripRoutes } from './modules/trips/trips.routes.js';
 import type { ObjectStorage } from './storage/storage.js';
@@ -72,6 +73,7 @@ export async function buildApp(deps: AppDeps, options: BuildAppOptions = {}) {
   // dell'oggetto request (raccomandazione di Fastify).
   app.decorateRequest('user', null as unknown as FastifyRequest['user']);
   app.decorateRequest('tripMember', null as unknown as FastifyRequest['tripMember']);
+  app.decorateRequest('trip', null as unknown as FastifyRequest['trip']);
 
   registerErrorHandling(app);
 
@@ -90,6 +92,7 @@ export async function buildApp(deps: AppDeps, options: BuildAppOptions = {}) {
       api.addHook('onRequest', createAuthenticateHook(api));
       await api.register(meRoutes);
       await api.register(tripRoutes);
+      await api.register(inviteRoutes);
     },
     { prefix: '/api' },
   );

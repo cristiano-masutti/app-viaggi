@@ -1,7 +1,7 @@
 import type { FastifyInstance, onRequestAsyncHookHandler } from 'fastify';
 import { z } from 'zod';
 
-import type { TripMember } from '../../generated/prisma/client.js';
+import type { Trip, TripMember } from '../../generated/prisma/client.js';
 import type { TripRole } from '../../generated/prisma/enums.js';
 import { forbidden, notFound } from '../../lib/errors.js';
 
@@ -17,6 +17,8 @@ declare module 'fastify' {
   interface FastifyRequest {
     /** La partecipazione dell'utente al viaggio della route, già verificata. */
     tripMember: TripMember;
+    /** Il viaggio della route, caricato insieme alla partecipazione. */
+    trip: Trip;
   }
 }
 
@@ -54,6 +56,7 @@ function requireTripMember(app: FastifyInstance): onRequestAsyncHookHandler {
 
     const member = await app.prisma.tripMember.findUnique({
       where: { tripId_userId: { tripId, userId: request.user.id } },
+      include: { trip: true },
     });
     if (!member) throw notFound('Trip');
 
@@ -62,6 +65,13 @@ function requireTripMember(app: FastifyInstance): onRequestAsyncHookHandler {
       throw forbidden(`This action requires one of the roles: ${allowedRoles.join(', ')}`);
     }
 
-    request.tripMember = member;
+    const { trip, ...tripMember } = member;
+    request.tripMember = tripMember;
+    request.trip = trip;
   };
 }
+
+/** Scorciatoia per le route riservate a chi organizza il viaggio. */
+export const COORDINATOR_ONLY = { tripRoles: ['coordinator'] } as const satisfies {
+  tripRoles: readonly TripRole[];
+};

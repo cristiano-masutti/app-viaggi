@@ -65,7 +65,7 @@ describe('authentication', () => {
 
     const response = await app.inject({
       method: 'POST',
-      url: '/api/trips/00000000-0000-4000-8000-000000000000/assets',
+      url: '/api/trips/00000000-0000-4000-8000-000000000000/documents',
       payload: form,
     });
 
@@ -96,9 +96,7 @@ describe('user provisioning', () => {
     const response = await app.inject({ method: 'GET', url: '/api/me', headers: await authHeaders(user) });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({
-      user: { id: user.id, email: user.email, createdAt: expect.any(String) },
-    });
+    expect(response.json().user).toMatchObject({ id: user.id, email: user.email, firstName: '' });
     expect(await prisma.user.count()).toBe(1);
   });
 
