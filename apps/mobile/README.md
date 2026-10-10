@@ -10,6 +10,8 @@ fnm use            # oppure: nvm use — legge .nvmrc (Node 24 LTS)
 npm install
 npm run ios        # oppure: npm run android
 npm run typecheck  # tsc --noEmit
+npm test           # Jest (jest-expo)
+npm run api:types  # rigenera src/api/schema.d.ts da ../backend/openapi.json
 ```
 
 > Le dipendenze native sono già allineate a Expo SDK 57: `npx expo start` basta
@@ -49,6 +51,15 @@ sotto `xcode`, che ne usa unicamente `v4()`, ancora esportato in CommonJS.
 Verificato con `npx expo prebuild --platform ios`. Quando Expo aggiornerà
 `xcode` l'override si può togliere. **Mai `npm audit fix --force`**: per
 "risolvere" riporterebbe Expo alla 46.
+
+Il secondo override fa usare a `openapi-typescript` (il generatore dei tipi
+dell'API, solo in sviluppo) il TypeScript 6 del progetto: dichiara `^5.x` come
+peer, ma per stampare tipi la 6 va bene, e i tipi generati passano `tsc`.
+
+> Nota: dall'ottobre 2026 `npm audit` segnala di nuovo vulnerabilità
+> (`shell-quote`, `node-forge`, `braces`… nella toolchain di Expo e Metro, non
+> nel codice che finisce nell'app). Sono uguali su `main` e vanno valutate a
+> parte, senza `--force`.
 
 ---
 
@@ -154,6 +165,11 @@ src/
 │   ├── motion.ts            molle e curve condivise
 │   └── interop.ts           registra className sui componenti di terze parti
 ├── types/index.ts           modello dati (il contratto mock ↔ UI)
+├── api/
+│   ├── schema.d.ts          tipi generati dalla specifica OpenAPI del backend (non a mano)
+│   ├── types.ts             nomi brevi per i DTO
+│   ├── client.ts            client tipizzato (openapi-fetch): token Supabase, ApiError
+│   └── mappers.ts           API ⇄ `src/types`: stato del viaggio, etichette, emoji
 ├── mock/                    stato iniziale: 5 viaggi, crew, ricordi, documenti
 ├── store/
 │   ├── AppStore.tsx         reducer unico + hook di lettura
@@ -174,6 +190,28 @@ src/
 │   └── viewers/             documenti, QR, foto zoomabili
 └── screens/                 le sei schermate
 ```
+
+### Il contratto con il backend
+
+Il mobile non scrive a mano nessun tipo dell'API: `src/api/schema.d.ts` si
+genera da `apps/backend/openapi.json`, che a sua volta nasce dagli schemi che il
+backend usa per validare. Se il backend cambia una risposta, `npm run
+api:types` aggiorna i tipi e `tsc` indica ogni punto del mobile da sistemare; la
+CI fallisce se i tipi non sono stati rigenerati.
+
+`mappers.ts` traduce i DTO nel modello di `src/types`, quello che le schermate
+già usano: il server manda date ISO, e lo stato del viaggio, il giorno
+corrente, '16 Set' e '18:42' si calcolano qui, sul telefono. I file non hanno
+URL fissi: un documento ha come `uri` un riferimento (`api:trips/…/documents/…`)
+che si risolve in un URL firmato al momento del download.
+
+### Test
+
+`npm test` usa Jest con il preset `jest-expo`; i file `*.test.ts` stanno
+accanto al codice che provano. I test girano sempre nel fuso `Europe/Rome`
+(`jest.global-setup.js`): le date del viaggio sono locali, e in UTC il cambio
+dell'ora legale non verrebbe mai provato. Le funzioni di test si importano da
+`@jest/globals`: con TypeScript 6 i tipi globali non entrano più da soli.
 
 ### Perché una sola `EditSheet`
 
@@ -223,8 +261,10 @@ destinazione.
 
 ## Cosa manca (di proposito)
 
-- **Backend**: l'autenticazione è un `setTimeout` e i dati vivono in memoria. I
-  punti di innesto sono marcati `TODO — AUTH` in `LoginScreen`.
+- **Backend**: il backend esiste (`apps/backend`) e qui ci sono già client
+  tipizzato e mapper, ma le schermate leggono ancora lo stato mock e il login
+  è un `setTimeout`. I punti di innesto sono marcati `TODO — AUTH` in
+  `LoginScreen`.
 - **Endpoint dei documenti**: gli URI mock puntano a `files.vibemakers.travel`,
   che non esiste. Finché è così, `saveForOffline` scrive per quei soli URI un
   segnaposto vero sul disco, così percorsi, stati e UI girano per davvero: una

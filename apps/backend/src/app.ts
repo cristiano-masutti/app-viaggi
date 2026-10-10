@@ -14,6 +14,7 @@ import { healthRoutes } from './modules/health/health.routes.js';
 import { inviteRoutes } from './modules/crew/invites.routes.js';
 import { meRoutes } from './modules/me/me.routes.js';
 import { tripRoutes } from './modules/trips/trips.routes.js';
+import { registerOpenApi } from './openapi.js';
 import type { ObjectStorage } from './storage/storage.js';
 
 /**
@@ -81,6 +82,8 @@ export async function buildApp(deps: AppDeps, options: BuildAppOptions = {}) {
   await app.register(multipart, {
     limits: { fileSize: deps.config.UPLOAD_MAX_BYTES, files: 1 },
   });
+
+  await registerOpenApi(app);
 
   // Pubbliche: le sonde dell'orchestratore non hanno un utente.
   await app.register(healthRoutes);

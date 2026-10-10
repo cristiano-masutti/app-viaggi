@@ -137,6 +137,12 @@ describe('GET /api/trips', () => {
       members: [{ user: me, role: 'coordinator' }],
     });
     await createTrip({ title: 'Non mio', members: [{ user: friend, role: 'coordinator' }] });
+    await prisma.tripInvitation.createMany({
+      data: [
+        { tripId: next.id, name: 'Aisha' },
+        { tripId: next.id, name: 'Tea', acceptedAt: new Date() },
+      ],
+    });
     await createMemory(past.id, friend.id, { kind: 'photo' });
     await createMemory(past.id, friend.id, { kind: 'photo', visibility: 'private' });
     await createMemory(past.id, me.id, { kind: 'video', visibility: 'private' });
@@ -146,12 +152,13 @@ describe('GET /api/trips', () => {
     const response = await (await asUser(app, me)).get('/api/trips');
 
     expect(response.statusCode).toBe(200);
-    expect(response.json().trips).toEqual([
+    const { trips } = response.json();
+    expect(trips).toEqual([
       expect.objectContaining({
         id: next.id,
         myRole: 'coordinator',
         totalDays: 12,
-        crewCount: 1,
+        pendingInvitations: 1,
         mediaCount: 0,
       }),
       // La foto privata dell'amico non si conta; il mio video privato sì; la nota non è un media.
@@ -159,10 +166,18 @@ describe('GET /api/trips', () => {
         id: past.id,
         myRole: 'traveller',
         totalDays: 8,
-        crewCount: 2,
+        pendingInvitations: 0,
         mediaCount: 2,
       }),
     ]);
+    // Coordinatori per primi, come li mostra la card; mai dati privati dei compagni.
+    expect(
+      trips[1].crew.map((member: { userId: string; role: string }) => [member.userId, member.role]),
+    ).toEqual([
+      [friend.id, 'coordinator'],
+      [me.id, 'traveller'],
+    ]);
+    expect(trips[1].crew[0]).not.toHaveProperty('email');
   });
 });
 

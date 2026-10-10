@@ -203,6 +203,11 @@ export interface Trip {
   totalDays: number;
   /** Valorizzato solo se `status === 'ongoing'`. */
   currentDay?: number;
+  /**
+   * Foto e video visibili a chi guarda, quando i ricordi non sono ancora
+   * caricati (le card dell'hub arrivano senza): vince su `memories`.
+   */
+  mediaCount?: number;
   coordinator: CrewMember;
   crew: CrewMember[];
   /** Posti totali del gruppo, per "8 confermati su 10 posti". */

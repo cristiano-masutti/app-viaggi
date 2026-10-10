@@ -235,6 +235,13 @@ allo schema → test con coverage → build.
 
 ## API
 
+Il contratto completo è [`openapi.json`](./openapi.json), generato da `npm run
+openapi` a partire dagli stessi schemi zod che validano le richieste: non può
+descrivere un'API diversa da quella che gira. Un test fallisce se il file non è
+aggiornato, e il mobile ne genera i suoi tipi (`apps/mobile/src/api/schema.d.ts`):
+**cambiato uno schema, `npm run openapi` e poi `npm run mobile:api-types` dalla
+root**, e `tsc` del mobile mostra cosa c'è da adattare.
+
 Tutto quello che sta sotto `/api` richiede `Authorization: Bearer <access token>`.
 `C` = coordinatore, `M` = qualunque membro, `A` = autore del ricordo.
 Le route del viaggio iniziano tutte con `/api/trips/:tripId` (qui `…`).

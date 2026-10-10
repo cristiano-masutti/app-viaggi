@@ -18,6 +18,8 @@
     "mobile:android": "npm --prefix apps/mobile run android",
     "mobile:web": "npm --prefix apps/mobile run web",
     "mobile:typecheck": "npm --prefix apps/mobile run typecheck",
+    "mobile:test": "npm --prefix apps/mobile test",
+    "mobile:api-types": "npm --prefix apps/mobile run api:types",
     "mobile:doctor": "npm --prefix apps/mobile run doctor",
     "backend:install": "npm --prefix apps/backend install",
     "backend:db:up": "docker compose -f apps/backend/docker-compose.yml up -d --wait",
@@ -25,6 +27,7 @@
     "backend:build": "npm --prefix apps/backend run build",
     "backend:test": "npm --prefix apps/backend test",
     "backend:verify": "npm --prefix apps/backend run verify",
+    "backend:openapi": "npm --prefix apps/backend run openapi",
     "backend:prisma:generate": "npm --prefix apps/backend run prisma:generate",
     "backend:prisma:migrate": "npm --prefix apps/backend run prisma:migrate"
   }

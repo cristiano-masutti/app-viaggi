@@ -5,11 +5,14 @@ on:
     branches: [main]
     paths:
       - 'apps/mobile/**'
+      # Il contratto dell'API: se cambia, i tipi del mobile vanno rigenerati.
+      - 'apps/backend/openapi.json'
       - '.github/workflows/mobile.yml'
       - '.nvmrc'
   pull_request:
     paths:
       - 'apps/mobile/**'
+      - 'apps/backend/openapi.json'
       - '.github/workflows/mobile.yml'
       - '.nvmrc'
 
@@ -21,8 +24,8 @@ permissions:
   contents: read
 
 jobs:
-  typecheck:
-    name: Typecheck
+  verify:
+    name: Typecheck, test, API types
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -41,4 +44,13 @@ jobs:
 
       - run: npm ci
 
+      # Se il backend ha cambiato il contratto senza che il mobile rigenerasse
+      # i tipi, qui il diff non è vuoto: `npm run api:types` e commit.
+      - name: API types match apps/backend/openapi.json
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/api/schema.d.ts
+
       - run: npm run typecheck
+
+      - run: npm test -- --ci
