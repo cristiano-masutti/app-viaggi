@@ -1,9 +1,9 @@
-# Vibemakers Travel — prototipo mobile
+# Vibemakers Travel — app mobile
 
-Prototipo frontend completo dell'app di viaggi di gruppo, per **iOS e Android**.
-React Native + Expo + TypeScript + NativeWind, stato mock completo e navigabile:
-si accede, si entra in un viaggio, si filtrano i ricordi, si modificano i
-documenti e si crea un viaggio nuovo senza toccare una riga di codice.
+L'app di viaggi di gruppo, per **iOS e Android**. React Native + Expo +
+TypeScript + NativeWind. Gira in due modi: collegata al backend vero
+(`apps/backend`, login con Supabase), oppure come prototipo con uno stato mock
+completo e navigabile, senza niente da accendere.
 
 ```bash
 fnm use            # oppure: nvm use — legge .nvmrc (Node 24 LTS)
@@ -13,6 +13,28 @@ npm run typecheck  # tsc --noEmit
 npm test           # Jest (jest-expo)
 npm run api:types  # rigenera src/api/schema.d.ts da ../backend/openapi.json
 ```
+
+### Prototipo o backend vero
+
+La modalità la decidono tre variabili d'ambiente (vedi
+[`.env.example`](./.env.example)):
+
+| | Prototipo (default) | Backend vero |
+| --- | --- | --- |
+| Si attiva | senza variabili | con `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_KEY` |
+| Login | qualunque credenziale | email e password di Supabase Auth |
+| Dati | `src/mock/`, in memoria | l'API di `apps/backend` |
+
+```bash
+cp .env.example .env   # e compila i tre valori
+npx expo start -c      # -c: le variabili EXPO_PUBLIC_* entrano nel bundle, la cache va svuotata
+```
+
+Gli account si creano dal pannello di Supabase (Authentication → Users): l'app
+non ha una registrazione autonoma, per scelta del prodotto. Il progetto Supabase
+deve firmare i token con le **JWT Signing Keys** asimmetriche, perché il backend
+li verifica con le chiavi pubbliche (dettagli nella README del backend). Per la
+build web il backend deve ammettere l'origine in `CORS_ORIGIN`.
 
 > Le dipendenze native sono già allineate a Expo SDK 57: `npx expo start` basta
 > per Expo Go o per una dev build.
@@ -171,8 +193,19 @@ src/
 │   ├── client.ts            client tipizzato (openapi-fetch): token Supabase, ApiError
 │   └── mappers.ts           API ⇄ `src/types`: stato del viaggio, etichette, emoji
 ├── mock/                    stato iniziale: 5 viaggi, crew, ricordi, documenti
+├── config.ts                prototipo o backend vero, dalle variabili EXPO_PUBLIC_*
+├── auth/
+│   ├── AuthProvider.tsx     login: Supabase (email e password) o finto
+│   ├── supabase.ts          client Supabase, sessione rinnovata da sola
+│   └── sessionStorage.ts    sessione nel portachiavi (SecureStore), a pezzi da 1,8 KB
+├── data/
+│   ├── remote.ts            le chiamate al backend, nel modello di `src/types`
+│   └── localPrefs.ts        ciò che resta sul telefono (sblocco biometrico, avatar)
 ├── store/
-│   ├── AppStore.tsx         reducer unico + hook di lettura
+│   ├── AppStore.tsx         provider: stato, azioni, URL dei file, avvisi
+│   ├── state.ts             reducer unico, lo stesso nelle due modalità
+│   ├── remoteActions.ts     azioni col backend: subito a schermo, poi il server
+│   ├── drafts.ts            da bozza (form) a viaggio o ricordo
 │   └── OfflineLibrary.tsx   coda che porta ogni documento sul disco
 ├── lib/                     date, haptics, id, helper viaggio, scroll header,
 │                            archiviazione offline dei documenti
@@ -204,6 +237,30 @@ già usano: il server manda date ISO, e lo stato del viaggio, il giorno
 corrente, '16 Set' e '18:42' si calcolano qui, sul telefono. I file non hanno
 URL fissi: un documento ha come `uri` un riferimento (`api:trips/…/documents/…`)
 che si risolve in un URL firmato al momento del download.
+
+### Le modifiche col backend
+
+Le schermate chiamano le stesse azioni nelle due modalità. Col backend ogni
+modifica segue lo stesso schema (`store/remoteActions.ts`):
+
+1. lo stato cambia subito, con lo stesso reducer del prototipo: l'interfaccia
+   resta istantanea anche con la rete lenta;
+2. parte la chiamata (prima l'upload dell'eventuale file appena scelto, poi lo
+   slot che lo usa);
+3. il viaggio si rilegge dal server, che assegna gli id veri. Se la chiamata
+   fallisce, la stessa rilettura annulla la modifica e un toast dice perché
+   ("Solo il coordinatore può farlo", "Il viaggio è al completo"…).
+
+Due riletture dello stesso viaggio in volo non si pestano: vince l'ultima
+partita. Le risposte che arrivano dopo un logout si scartano, e un token
+rifiutato dal backend (401) riporta al login una volta sola, con un solo
+avviso. Creare un viaggio è l'unica azione che aspetta il server: serve l'id
+vero per aprirlo.
+
+L'hub mostra gli skeleton finché arrivano i viaggi, offre "Riprova" se il primo
+caricamento fallisce, e si riallinea al server tornandoci sopra o trascinando in
+giù. Il dettaglio di un viaggio si rilegge a ogni apertura: programma e ricordi
+cambiano anche dai telefoni dei compagni.
 
 ### Test
 
@@ -237,10 +294,13 @@ stato della UI:
 | Marocco Express 🇲🇦 | concluso | Archivio con ricordi e note |
 | Portogallo Surf 🇵🇹 | concluso | Archivio leggero |
 
-Il login accetta qualunque credenziale. In sviluppo (`__DEV__`) il nome utente
-può anche restare vuoto. Lo "Sblocco Rapido" compare solo quando
-il device ha hardware biometrico, un'impronta registrata e una sessione salvata:
-è volutamente agnostico — icona neutra e dicitura identica su iOS e Android.
+Nel prototipo il login accetta qualunque credenziale, e in sviluppo (`__DEV__`)
+il nome utente può anche restare vuoto. Col backend vero servono email e
+password dell'account Supabase. Lo "Sblocco Rapido" compare solo quando
+il device ha hardware biometrico, un'impronta registrata e una sessione salvata
+(col backend: la sessione Supabase nel portachiavi); riapre quella sessione
+senza ridigitare la password. È volutamente agnostico — icona neutra e dicitura
+identica su iOS e Android.
 
 ---
 
@@ -261,16 +321,16 @@ destinazione.
 
 ## Cosa manca (di proposito)
 
-- **Backend**: il backend esiste (`apps/backend`) e qui ci sono già client
-  tipizzato e mapper, ma le schermate leggono ancora lo stato mock e il login
-  è un `setTimeout`. I punti di innesto sono marcati `TODO — AUTH` in
-  `LoginScreen`.
-- **Endpoint dei documenti**: gli URI mock puntano a `files.vibemakers.travel`,
-  che non esiste. Finché è così, `saveForOffline` scrive per quei soli URI un
-  segnaposto vero sul disco, così percorsi, stati e UI girano per davvero: una
-  costante e un ramo, marcati `SHIM DI PROTOTIPO`, da cancellare quando il
-  backend risponde. Il resto del modulo è già il codice definitivo. Su web
-  `expo-file-system` è uno stub, quindi lì lo stato è dichiarato come anteprima.
+- **Col backend, non ancora collegati**: la copertina del viaggio (il backend
+  non la salva ancora), l'ingresso in un viaggio dal link di invito, la gestione
+  della crew (inviti, ruoli), l'avatar sul server, il recupero della password.
+  Le API di crew e inviti esistono già nel backend.
+- **Documenti del prototipo**: gli URI mock puntano a `files.vibemakers.travel`,
+  che non esiste. Per quei soli URI `saveForOffline` scrive un segnaposto vero
+  sul disco, così percorsi, stati e UI girano per davvero anche nel prototipo:
+  una costante e un ramo, marcati `SHIM DI PROTOTIPO`. Col backend i documenti
+  si scaricano dagli URL firmati. Su web `expo-file-system` è uno stub, quindi lì
+  lo stato è dichiarato come anteprima.
 - **Renderer PDF**: `DocumentViewerModal` disegna un foglio mock; la struttura
   del viewer è definitiva, va sostituito solo il blocco centrale. Il QR è
   generato con `react-native-svg` a partire dal codice pratica: stabile e

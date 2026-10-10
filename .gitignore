@@ -36,6 +36,9 @@ apps/backend/.env
 apps/backend/.env.*
 !apps/backend/.env.example
 !apps/backend/.env.test
+apps/mobile/.env
+apps/mobile/.env.*
+!apps/mobile/.env.example
 
 # Prisma Client generato da `prisma generate`
 apps/backend/src/generated/

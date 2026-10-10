@@ -1,4 +1,5 @@
 import { daysBetween, shortDate, todayISO } from '@/lib/date';
+import { PROFILE_PASSPORT_DOC_ID } from '@/lib/documentIds';
 import { blurhash } from '@/theme/palette';
 import type {
   CrewMember,
@@ -46,14 +47,15 @@ import type {
 export const apiFileUri = {
   document: (tripId: string, documentId: string) => `api:trips/${tripId}/documents/${documentId}`,
   memory: (tripId: string, memoryId: string) => `api:trips/${tripId}/memories/${memoryId}`,
-  passport: () => 'api:me/passport/photo',
+  /** La versione cambia a ogni nuova scansione: la copia offline si rinnova. */
+  passport: (version: string | null) => `api:me/passport/photo${version ? `?v=${version}` : ''}`,
 };
 
 /** Il percorso dell'API che firma il file, oppure `null` se l'URI non è un riferimento dell'API. */
 export function signedUrlPathFor(uri: string): string | null {
   if (!uri.startsWith('api:')) return null;
   const path = uri.slice('api:'.length);
-  if (path === 'me/passport/photo') return '/api/me/passport/photo/url';
+  if (/^me\/passport\/photo(\?v=[\w-]+)?$/.test(path)) return '/api/me/passport/photo/url';
   if (/^trips\/[^/]+\/documents\/[^/]+$/.test(path)) return `/api/${path}/url`;
   if (/^trips\/[^/]+\/memories\/[^/]+$/.test(path)) return `/api/${path}/media-url`;
   return null;
@@ -183,12 +185,13 @@ export function tripFromDetail(dto: TripDetailDto, today?: string): Trip {
         expiry: passport.expiry ?? '',
         doc: passport.hasPhoto
           ? {
-              id: 'passport-master',
+              // Lo stesso id del profilo: la libreria offline lo scarica una volta sola.
+              id: PROFILE_PASSPORT_DOC_ID,
               kind: 'image',
               title: 'Passaporto',
               subtitle: 'Pagina dati',
               code: passport.number ?? '',
-              uri: apiFileUri.passport(),
+              uri: apiFileUri.passport(passport.photoVersion),
             }
           : null,
       },
@@ -267,7 +270,8 @@ export function toMemory(tripId: string, dto: MemoryDto): Memory {
   return {
     ...base,
     kind: dto.kind,
-    uri: apiFileUri.memory(tripId, dto.id),
+    // URL firmato e temporaneo: la cache dell'immagine va legata all'id, non all'URL.
+    uri: dto.mediaUrl ?? apiFileUri.memory(tripId, dto.id),
     blurhash: dto.blurhash ?? blurhash.ink,
     caption: dto.caption ?? undefined,
     aspectRatio: dto.aspectRatio,
@@ -327,7 +331,7 @@ export function toUserProfile(dto: ProfileDto, local: Pick<UserProfile, 'avatar'
     passport: {
       number: dto.passport?.number ?? '',
       expiry: dto.passport?.expiry ?? '',
-      photoUri: dto.passport?.hasPhoto ? apiFileUri.passport() : '',
+      photoUri: dto.passport?.hasPhoto ? apiFileUri.passport(dto.passport.photoVersion) : '',
     },
     fiscalCode: dto.fiscalCode ?? '',
     diet: dto.diet,

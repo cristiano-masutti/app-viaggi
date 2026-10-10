@@ -53,7 +53,25 @@ export const isLocalUri = (uri: string) =>
 
 const extensionFor = (doc: DocumentRef) => (doc.kind === 'pdf' ? 'pdf' : 'png');
 
-const fileNameFor = (doc: DocumentRef) => `${doc.id}.${extensionFor(doc)}`;
+/** FNV-1a a 32 bit: un'impronta corta e stabile, non un hash crittografico. */
+function fingerprint(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/**
+ * La chiave della copia locale: l'id del documento più un'impronta della sua
+ * sorgente. Quasi sempre un file nuovo ha anche un id nuovo; la scansione del
+ * passaporto no (è una per persona), e cambia solo l'URI, che porta la versione.
+ * Così una scansione sostituita si riscarica, e la vecchia diventa un orfano.
+ */
+export const offlineKey = (doc: DocumentRef) => `${doc.id}-${fingerprint(doc.uri)}`;
+
+const fileNameFor = (doc: DocumentRef) => `${offlineKey(doc)}.${extensionFor(doc)}`;
 
 /** La cartella dei documenti, creata alla prima necessità. */
 function documentsFolder(): Directory {
@@ -88,7 +106,17 @@ export function storedDocument(doc: DocumentRef): StoredDocument | null {
  * Scarica il documento e lo lascia sul disco.
  * Idempotente: se il file c'è già non ritocca nulla.
  */
-export async function saveForOffline(doc: DocumentRef): Promise<StoredDocument> {
+export async function saveForOffline(
+  doc: DocumentRef,
+  /**
+   * Da riferimento a URL scaricabile: i file del backend (`api:…`) si aprono
+   * solo con URL firmati e a scadenza, chiesti al momento del download.
+   */
+  resolveUrl: (uri: string) => Promise<string> = async (uri) => uri,
+): Promise<StoredDocument> {
+  // Un QR senza file si disegna dal codice: non c'è niente da portare sul disco.
+  if (doc.uri === '') return { uri: '', bytes: 0 };
+
   const existing = storedDocument(doc);
   if (existing) return existing;
 
@@ -96,7 +124,7 @@ export async function saveForOffline(doc: DocumentRef): Promise<StoredDocument> 
   // e la UI dichiara apertamente che il disco è solo su iOS e Android.
   if (!OFFLINE_STORAGE_SUPPORTED) {
     await new Promise((resolve) => setTimeout(resolve, SIMULATED_TRANSFER_MS));
-    return { uri: doc.uri, bytes: 0 };
+    return { uri: await resolveUrl(doc.uri), bytes: 0 };
   }
 
   const file = fileFor(doc);
@@ -109,7 +137,7 @@ export async function saveForOffline(doc: DocumentRef): Promise<StoredDocument> 
     return { uri: file.uri, bytes: file.size };
   }
 
-  const downloaded = await File.downloadFileAsync(doc.uri, file, { idempotent: true });
+  const downloaded = await File.downloadFileAsync(await resolveUrl(doc.uri), file, { idempotent: true });
   return { uri: downloaded.uri, bytes: downloaded.size };
 }
 
@@ -134,17 +162,18 @@ export function removeOffline(doc: DocumentRef): void {
  * Il nome del file è `<id>.<ext>`, quindi basta confrontare i nomi con gli id
  * ancora vivi: nessun registro da tenere allineato.
  */
-export function pruneOrphans(validIds: Set<string>): number {
+export function pruneOrphans(documents: DocumentRef[]): number {
   if (!OFFLINE_STORAGE_SUPPORTED) return 0;
 
   try {
+    const valid = new Set(documents.map(offlineKey));
     let removed = 0;
     documentsFolder()
       .list()
       .forEach((entry) => {
         if (!(entry instanceof File)) return;
-        const id = entry.name.replace(/\.[^.]+$/, '');
-        if (validIds.has(id)) return;
+        const key = entry.name.replace(/\.[^.]+$/, '');
+        if (valid.has(key)) return;
         entry.delete();
         removed += 1;
       });

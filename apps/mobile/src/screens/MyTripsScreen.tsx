@@ -1,8 +1,10 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import { Bell } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { useAuth } from '@/auth/AuthProvider';
 import { HeroTripCard, StandardTripCard } from '@/components/trips/TripCards';
 import { DashedPlaceholder } from '@/components/ui/DashedPlaceholder';
 import { HeaderIconButton, ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -11,11 +13,11 @@ import { useHeaderScroll } from '@/lib/useHeaderScroll';
 import { HUB_SUBTITLES } from '@/lib/trip';
 import { TAB_BAR_SPACE } from '@/navigation/FloatingTabBar';
 import type { MainTabScreenProps } from '@/navigation/types';
-import { useProfile, useTripsByStatus } from '@/store/AppStore';
+import { useAppActions, useAppState, useProfile, useTripsByStatus } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
 import type { Trip, TripStatus } from '@/types';
 
-/** Finto primo caricamento: mostra gli skeleton al posto degli spinner. */
+/** Prototipo: finto primo caricamento, per vedere gli skeleton al posto degli spinner. */
 const BOOT_DELAY_MS = 550;
 
 /**
@@ -29,15 +31,40 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
   const profile = useProfile();
   const [tab, setTab] = useState<TripStatus>('ongoing');
   const [headerHeight, setHeaderHeight] = useState(180);
-  const [booting, setBooting] = useState(true);
   const { scrollY, scrollComponent } = useHeaderScroll();
+  const remote = useAuth().mode === 'remote';
+  const { tripsStatus } = useAppState();
+  const { refreshTrips } = useAppActions();
 
   const trips = useTripsByStatus(tab);
 
+  const [mockBooting, setMockBooting] = useState(!remote);
   useEffect(() => {
-    const timer = setTimeout(() => setBooting(false), BOOT_DELAY_MS);
+    if (remote) return;
+    const timer = setTimeout(() => setMockBooting(false), BOOT_DELAY_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [remote]);
+  const booting = remote ? tripsStatus === 'idle' || tripsStatus === 'loading' : mockBooting;
+
+  // Al ritorno sull'hub (da un viaggio, dal profilo) le card si riallineano al
+  // server: nuovi compagni, ricordi degli altri. Il primo ingresso no, lo fa il login.
+  const focusedOnce = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!focusedOnce.current) {
+        focusedOnce.current = true;
+        return;
+      }
+      if (remote) void refreshTrips();
+    }, [refreshTrips, remote]),
+  );
+
+  const [pulling, setPulling] = useState(false);
+  const pullToRefresh = useCallback(async () => {
+    setPulling(true);
+    await refreshTrips();
+    setPulling(false);
+  }, [refreshTrips]);
 
   const openTrip = useCallback(
     (tripId: string) => navigation.navigate('TripDetail', { tripId }),
@@ -83,6 +110,10 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
           <TripCardSkeleton hero />
           <TripCardSkeleton />
         </View>
+      ) : remote && tripsStatus === 'error' ? (
+        <View style={{ paddingTop: headerHeight + 16 }} className="px-5">
+          <LoadError onRetry={() => void refreshTrips()} />
+        </View>
       ) : (
         <FlashList
           data={trips}
@@ -93,6 +124,10 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
           renderItem={renderItem}
           renderScrollComponent={scrollComponent}
           showsVerticalScrollIndicator={false}
+          // Trascinare in giù riallinea le card al server (solo con il backend reale).
+          refreshing={pulling}
+          onRefresh={remote ? () => void pullToRefresh() : undefined}
+          progressViewOffset={headerHeight}
           contentContainerStyle={{
             paddingTop: headerHeight + 16,
             paddingBottom: TAB_BAR_SPACE + 16,
@@ -161,6 +196,25 @@ function TripsStatusTabs({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+/** Il primo caricamento non è riuscito (rete, server giù): si può riprovare. */
+function LoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View className="items-center gap-3 rounded-card border border-dashed border-ink-700 px-5 py-10">
+      <Text className="text-[15px] font-extrabold tracking-tight text-bone">Viaggi non caricati</Text>
+      <Text className="text-center text-[12.5px] font-semibold leading-[18px] text-mist">
+        Controlla la connessione e riprova.
+      </Text>
+      <Pressable
+        onPress={onRetry}
+        accessibilityLabel="Riprova a caricare i viaggi"
+        className="mt-1 h-[42px] items-center justify-center rounded-[14px] bg-tangerine px-5"
+      >
+        <Text className="text-[13.5px] font-extrabold tracking-tight text-white">Riprova</Text>
+      </Pressable>
     </View>
   );
 }

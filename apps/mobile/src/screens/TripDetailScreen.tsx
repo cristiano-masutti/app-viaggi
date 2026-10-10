@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { buildEditConfig, newEntityId, type EditTarget } from '@/components/orga
 import { OrganizeTab } from '@/components/organize/OrganizeTab';
 import { EditSheet, type EditValues } from '@/components/sheets/EditSheet';
 import { HeaderIconButton, ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { SegmentedSwitcher } from '@/components/ui/SegmentedSwitcher';
 import { useToast } from '@/components/ui/Toast';
 import { DocumentViewerModal } from '@/components/viewers/DocumentViewerModal';
@@ -16,7 +17,7 @@ import { PhotoViewerModal } from '@/components/viewers/PhotoViewerModal';
 import { defaultDayId, photoMemories, tripBadge } from '@/lib/trip';
 import { useHeaderScroll } from '@/lib/useHeaderScroll';
 import type { RootStackScreenProps } from '@/navigation/types';
-import { useAppActions, useProfile, useTrip } from '@/store/AppStore';
+import { useAppActions, useProfile, useTrip, useTripLoaded } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
 import type { DocumentRef, NewMemoryDraft, NoteMemory, ReactionKey } from '@/types';
 
@@ -35,11 +36,29 @@ const TABS = [
  * si trova nel tempo — cambia solo quanto è pieno.
  */
 export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'TripDetail'>) {
-  const trip = useTrip(route.params.tripId);
+  const { tripId } = route.params;
+  const trip = useTrip(tripId);
+  const loaded = useTripLoaded(tripId);
   const profile = useProfile();
   const actions = useAppActions();
   const toast = useToast();
   const insets = useSafeAreaInsets();
+
+  // Ogni apertura rilegge il viaggio: programma e ricordi cambiano anche dai
+  // telefoni dei compagni. Nel prototipo è un no-op, i dati sono già tutti qui.
+  const { loadTrip } = actions;
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loadSettled, setLoadSettled] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setLoadSettled(false);
+    void loadTrip(tripId).finally(() => {
+      if (active) setLoadSettled(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [loadAttempt, loadTrip, tripId]);
 
   const [tab, setTab] = useState<TabKey>('memories');
   const [headerHeight, setHeaderHeight] = useState(150);
@@ -208,10 +227,31 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
     [actions, toast, trip],
   );
 
-  if (!trip) {
+  // Dall'hub arriva solo la card: finché giorni, documenti e ricordi non ci
+  // sono si vede lo scheletro della pagina, non una pagina vuota.
+  if (!trip || !loaded) {
+    if (!loadSettled) return <TripDetailSkeleton title={trip?.title} onBack={() => navigation.goBack()} />;
     return (
-      <View className="flex-1 items-center justify-center bg-ink-950">
-        <Text className="text-[15px] font-bold text-bone">Viaggio non trovato.</Text>
+      <View className="flex-1 items-center justify-center gap-4 bg-ink-950 px-8">
+        <Text className="text-center text-[15px] font-bold text-bone">
+          {trip ? 'Il viaggio non si è caricato.' : 'Viaggio non trovato.'}
+        </Text>
+        <View className="flex-row gap-3">
+          <Pressable
+            onPress={() => navigation.goBack()}
+            accessibilityLabel="Torna ai miei viaggi"
+            className="h-[42px] items-center justify-center rounded-[14px] border border-ink-700 bg-ink-900 px-4"
+          >
+            <Text className="text-[13.5px] font-bold tracking-tight text-bone">Indietro</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setLoadAttempt((attempt) => attempt + 1)}
+            accessibilityLabel="Riprova a caricare il viaggio"
+            className="h-[42px] items-center justify-center rounded-[14px] bg-tangerine px-5"
+          >
+            <Text className="text-[13.5px] font-extrabold tracking-tight text-white">Riprova</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -335,6 +375,36 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
         onDelete={() => viewerPhoto && deleteMemory(viewerPhoto.id)}
         onClose={() => setViewerPhotoId(null)}
       />
+    </View>
+  );
+}
+
+/** La forma della pagina mentre arriva il dettaglio: header vero, contenuto in attesa. */
+function TripDetailSkeleton({ title, onBack }: { title?: string; onBack: () => void }) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View className="flex-1 bg-ink-950" style={{ paddingTop: insets.top + 8 }}>
+      <View className="flex-row items-center gap-3 px-5 pb-4">
+        <Pressable onPress={onBack} accessibilityLabel="Torna ai miei viaggi">
+          <HeaderIconButton>
+            <ArrowLeft size={19} color={palette.text} strokeWidth={2.2} />
+          </HeaderIconButton>
+        </Pressable>
+        {title ? (
+          <Text numberOfLines={1} className="flex-1 text-[17px] font-extrabold tracking-tight text-white">
+            {title}
+          </Text>
+        ) : (
+          <Skeleton className="h-5 flex-1 rounded-lg" />
+        )}
+      </View>
+      <View className="gap-3.5 px-5" accessibilityLabel="Caricamento del viaggio">
+        <Skeleton className="h-[46px] rounded-control" />
+        <Skeleton className="h-[180px] rounded-card" delay={120} />
+        <Skeleton className="h-[96px] rounded-card" delay={240} />
+        <Skeleton className="h-[96px] rounded-card" delay={360} />
+      </View>
     </View>
   );
 }

@@ -138,6 +138,7 @@ export interface paths {
                                     number: string | null;
                                     expiry: string | null;
                                     hasPhoto: boolean;
+                                    photoVersion: string | null;
                                 } | null;
                                 /** Format: date-time */
                                 createdAt: string;
@@ -199,6 +200,7 @@ export interface paths {
                                     number: string | null;
                                     expiry: string | null;
                                     hasPhoto: boolean;
+                                    photoVersion: string | null;
                                 } | null;
                                 /** Format: date-time */
                                 createdAt: string;
@@ -238,6 +240,7 @@ export interface paths {
                                 number: string | null;
                                 expiry: string | null;
                                 hasPhoto: boolean;
+                                photoVersion: string | null;
                             };
                         };
                     };
@@ -501,6 +504,7 @@ export interface paths {
                                         number: string | null;
                                         expiry: string | null;
                                         hasPhoto: boolean;
+                                        photoVersion: string | null;
                                     } | null;
                                     customs: {
                                         code: string;
@@ -708,6 +712,7 @@ export interface paths {
                                         number: string | null;
                                         expiry: string | null;
                                         hasPhoto: boolean;
+                                        photoVersion: string | null;
                                     } | null;
                                     customs: {
                                         code: string;
@@ -938,6 +943,7 @@ export interface paths {
                                         number: string | null;
                                         expiry: string | null;
                                         hasPhoto: boolean;
+                                        photoVersion: string | null;
                                     } | null;
                                     customs: {
                                         code: string;
@@ -2118,6 +2124,7 @@ export interface paths {
                                 blurhash: string | null;
                                 durationSeconds: number | null;
                                 mimeType: string;
+                                mediaUrl: string | null;
                                 reactions: {
                                     fire?: number;
                                     laugh?: number;
@@ -2183,6 +2190,7 @@ export interface paths {
                                 blurhash: string | null;
                                 durationSeconds: number | null;
                                 mimeType: string;
+                                mediaUrl: string | null;
                                 reactions: {
                                     fire?: number;
                                     laugh?: number;
@@ -2293,6 +2301,7 @@ export interface paths {
                                 blurhash: string | null;
                                 durationSeconds: number | null;
                                 mimeType: string;
+                                mediaUrl: string | null;
                                 reactions: {
                                     fire?: number;
                                     laugh?: number;

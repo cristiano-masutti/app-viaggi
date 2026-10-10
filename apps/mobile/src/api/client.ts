@@ -18,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-interface ApiClientOptions {
+export interface ApiClientOptions {
   baseUrl: string;
   /** Il token corrente di Supabase; `null` se l'utente non ha una sessione. */
   getAccessToken: () => Promise<string | null>;
@@ -48,6 +48,37 @@ export function createApiClient({ baseUrl, getAccessToken, onUnauthorized, fetch
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;
+
+/**
+ * Richiesta fuori dal client tipizzato, con lo stesso token e lo stesso formato
+ * d'errore: per gli upload multipart (che la specifica non descrive) e per i
+ * percorsi costruiti a runtime (la firma di un file da un riferimento `api:`).
+ */
+export async function apiRequest<T>(
+  { baseUrl, getAccessToken, onUnauthorized, fetch = globalThis.fetch }: ApiClientOptions,
+  method: 'GET' | 'POST' | 'PUT',
+  path: string,
+  body?: FormData,
+): Promise<T> {
+  const token = await getAccessToken();
+  const response = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body,
+  });
+  if (response.status === 401) onUnauthorized?.();
+
+  const payload: unknown = await response.json().catch(() => undefined);
+  if (response.ok) return payload as T;
+
+  const envelope = (payload ?? {}) as ErrorEnvelope;
+  throw new ApiError(
+    response.status,
+    envelope.error?.code ?? 'UNKNOWN_ERROR',
+    envelope.error?.message ?? `Request failed with status ${response.status}`,
+    envelope.error?.details,
+  );
+}
 
 interface ErrorEnvelope {
   error?: { code?: string; message?: string; details?: unknown };

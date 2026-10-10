@@ -2,12 +2,14 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 
 import {
   OFFLINE_STORAGE_SUPPORTED,
+  offlineKey,
   pruneOrphans,
   saveForOffline,
   storedDocument,
   type StoredDocument,
 } from '@/lib/offlineDocuments';
-import { useAppState } from '@/store/AppStore';
+import { PROFILE_PASSPORT_DOC_ID } from '@/lib/documentIds';
+import { useAppState, useFileUrlResolver } from '@/store/AppStore';
 import type { DocumentRef, Trip } from '@/types';
 
 /**
@@ -80,11 +82,11 @@ export function collectTripDocuments(trip: Trip): DocumentRef[] {
   return docs;
 }
 
-/** Id del documento sintetico che rappresenta la scansione del Passaporto Master. */
-export const PROFILE_PASSPORT_DOC_ID = 'profile-passport-scan';
+export { PROFILE_PASSPORT_DOC_ID };
 
 export function OfflineLibraryProvider({ children }: { children: React.ReactNode }) {
   const { trips, profile } = useAppState();
+  const resolveFileUrl = useFileUrlResolver();
   const [entries, setEntries] = useState<Record<string, OfflineEntry>>({});
 
   /**
@@ -116,7 +118,10 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
     return [...byId.values()];
   }, [profile.passport.number, profile.passport.photoUri, trips]);
 
-  /** Id già presi in carico: evita che l'effetto riaccodi a ogni render. */
+  /**
+   * Documenti già presi in carico (per `offlineKey`: un file sostituito sotto
+   * lo stesso id è un documento nuovo): evita che l'effetto riaccodi a ogni render.
+   */
   const handled = useRef(new Set<string>());
   const queue = useRef<DocumentRef[]>([]);
   const running = useRef(0);
@@ -129,7 +134,7 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
       running.current += 1;
       setEntries((previous) => ({ ...previous, [doc.id]: { state: 'saving' } }));
 
-      saveForOffline(doc)
+      saveForOffline(doc, resolveFileUrl)
         .then((stored: StoredDocument) => {
           setEntries((previous) => ({
             ...previous,
@@ -138,7 +143,7 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
         })
         .catch(() => {
           // Un fallimento non è definitivo: resta visibile e riprovabile.
-          handled.current.delete(doc.id);
+          handled.current.delete(offlineKey(doc));
           setEntries((previous) => ({ ...previous, [doc.id]: { state: 'failed' } }));
         })
         .finally(() => {
@@ -146,7 +151,7 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
           pump();
         });
     }
-  }, []);
+  }, [resolveFileUrl]);
 
   useEffect(() => {
     if (documents.length === 0) return;
@@ -154,16 +159,16 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
     // Prima si fa pulizia: un voucher sostituito non deve lasciare in giro la
     // copia vecchia. Va fatto anche quando non c'è niente di nuovo da scaricare,
     // perché "documento rimosso" è esattamente quel caso.
-    pruneOrphans(new Set(documents.map((doc) => doc.id)));
+    pruneOrphans(documents);
 
-    const fresh = documents.filter((doc) => !handled.current.has(doc.id));
+    const fresh = documents.filter((doc) => !handled.current.has(offlineKey(doc)));
     if (fresh.length === 0) return;
 
     const alreadyOnDisk: Record<string, OfflineEntry> = {};
     const toDownload: DocumentRef[] = [];
 
     fresh.forEach((doc) => {
-      handled.current.add(doc.id);
+      handled.current.add(offlineKey(doc));
       // Il disco è l'indice: se il file c'è già, lo stato è noto senza rete.
       const stored = storedDocument(doc);
       if (stored) alreadyOnDisk[doc.id] = { state: 'saved', localUri: stored.uri, bytes: stored.bytes };
@@ -191,7 +196,7 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
     const failed = documents.filter((doc) => entries[doc.id]?.state === 'failed');
     if (failed.length === 0) return;
 
-    failed.forEach((doc) => handled.current.add(doc.id));
+    failed.forEach((doc) => handled.current.add(offlineKey(doc)));
     setEntries((previous) => {
       const next = { ...previous };
       failed.forEach((doc) => {

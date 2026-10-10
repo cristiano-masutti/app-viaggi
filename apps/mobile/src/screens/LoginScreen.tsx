@@ -1,6 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
 import { Eye, EyeOff, Lock, User } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -17,13 +16,21 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthError, useAuth } from '@/auth/AuthProvider';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useAppActions } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
 
-/** Chiave della sessione salvata: la sua presenza abilita lo Sblocco Rapido. */
-const SESSION_KEY = 'vibemakers.session';
 const LOGIN_HERO_IMAGE = require('../../assets/login-hero.png');
+
+/** Il messaggio per l'utente: cosa fare, non cosa è andato storto dentro. */
+function signInErrorMessage(error: unknown): string {
+  if (error instanceof AuthError) {
+    if (error.reason === 'invalid_credentials') return 'Credenziali non valide. Contatta il coordinatore.';
+    if (error.reason === 'network') return 'Nessuna connessione. Riprova tra poco.';
+  }
+  return 'Accesso non riuscito. Riprova tra poco.';
+}
 
 /**
  * Login essenziale.
@@ -32,12 +39,18 @@ const LOGIN_HERO_IMAGE = require('../../assets/login-hero.png');
  * registrazione autonoma, nessun quiz introduttivo. Chi non ha le credenziali
  * ha un solo percorso — scrivere al coordinatore.
  *
+ * Con il backend reale l'accesso è email e password di Supabase Auth; nel
+ * prototipo qualunque nome utente va bene.
+ *
  * Lo sblocco biometrico è volutamente agnostico: icona neutra e dicitura
  * "Sblocco Rapido", identiche su iOS e Android. Sotto c'è comunque il prompt
- * nativo del sistema, che userà ciò che il device ha configurato.
+ * nativo del sistema, che userà ciò che il device ha configurato. Riapre la
+ * sessione salvata sul telefono, senza ridigitare la password.
  */
 export function LoginScreen() {
   const { signIn } = useAppActions();
+  const auth = useAuth();
+  const remote = auth.mode === 'remote';
   const passwordRef = useRef<TextInputRef>(null);
 
   const [username, setUsername] = useState('');
@@ -46,7 +59,9 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quickUnlockAvailable, setQuickUnlockAvailable] = useState(false);
-  const isDevUsernameOptional = __DEV__;
+  // Nel prototipo, in sviluppo, basta la password; il backend vuole l'email.
+  const isDevUsernameOptional = __DEV__ && !remote;
+  const identifierLabel = auth.identifierLabel;
 
   const quickUnlock = useCallback(async () => {
     setError(null);
@@ -74,25 +89,26 @@ export function LoginScreen() {
       const [hasHardware, isEnrolled, session] = await Promise.all([
         LocalAuthentication.hasHardwareAsync(),
         LocalAuthentication.isEnrolledAsync(),
-        SecureStore.getItemAsync(SESSION_KEY).catch(() => null),
+        auth.hasSavedSession().catch(() => false),
       ]);
-      if (!cancelled) setQuickUnlockAvailable(hasHardware && isEnrolled && !!session);
+      if (!cancelled) setQuickUnlockAvailable(hasHardware && isEnrolled && session);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [auth]);
 
   const handleSignIn = useCallback(async () => {
     const missingUsername = !isDevUsernameOptional && username.trim().length === 0;
     const missingPassword = password.length === 0;
 
     if (missingUsername || missingPassword) {
+      const missingIdentifier = remote ? "l'email" : 'il nome utente';
       if (missingUsername && missingPassword) {
-        setError('Mancano nome utente e password.');
+        setError(`Mancano ${remote ? 'email' : 'nome utente'} e password.`);
       } else if (missingUsername) {
-        setError('Manca il nome utente.');
+        setError(`Manca ${missingIdentifier}.`);
       } else {
         setError('Manca la password.');
       }
@@ -102,16 +118,14 @@ export function LoginScreen() {
     setError(null);
     setLoading(true);
     try {
-      // TODO — AUTH: sostituire con la chiamata reale dell'organizzazione.
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      await SecureStore.setItemAsync(SESSION_KEY, 'token-placeholder').catch(() => null);
+      await auth.signIn(username, password);
+      // Lo smontaggio del login arriva con il cambio di stato: niente setState dopo.
       signIn();
-    } catch {
-      setError('Credenziali non valide. Contatta il coordinatore.');
-    } finally {
+    } catch (failure) {
+      setError(signInErrorMessage(failure));
       setLoading(false);
     }
-  }, [isDevUsernameOptional, password, signIn, username]);
+  }, [auth, isDevUsernameOptional, password, remote, signIn, username]);
 
   const canSubmit = password.length > 0 && (isDevUsernameOptional || username.trim().length > 0);
 
@@ -162,8 +176,11 @@ export function LoginScreen() {
                   setUsername(text);
                   setError(null);
                 }}
-                placeholder="Nome utente"
+                placeholder={identifierLabel}
                 autoCapitalize="none"
+                {...(remote
+                  ? { keyboardType: 'email-address' as const, autoComplete: 'email' as const, textContentType: 'emailAddress' as const }
+                  : { autoComplete: 'username' as const, textContentType: 'username' as const })}
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
               />
@@ -178,6 +195,8 @@ export function LoginScreen() {
                 }}
                 placeholder="Password"
                 secureTextEntry={!showPassword}
+                autoComplete="current-password"
+                textContentType="password"
                 autoCapitalize="none"
                 returnKeyType="go"
                 onSubmitEditing={() => {

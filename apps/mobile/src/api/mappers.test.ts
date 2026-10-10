@@ -71,7 +71,7 @@ const detail: TripDetailDto = {
         : [],
   })),
   documents: {
-    passport: { number: 'YA9182773', expiry: '04/2029', hasPhoto: true },
+    passport: { number: 'YA9182773', expiry: '04/2029', hasPhoto: true, photoVersion: 'a1b2c3d4e5f60718' },
     customs: null,
     insurance: { company: 'Europ Assistance', policy: 'VM-1', coverage: 'fino al 24/09', emergencyPhone: '+390258286666', doc: null },
     transports: [
@@ -139,7 +139,10 @@ describe('tripFromDetail', () => {
   });
 
   it('points files at the API and leaves a QR without file to the phone', () => {
-    expect(trip.documents.passport).toMatchObject({ number: 'YA9182773', doc: { uri: 'api:me/passport/photo' } });
+    expect(trip.documents.passport).toMatchObject({
+      number: 'YA9182773',
+      doc: { id: 'profile-passport-scan', uri: 'api:me/passport/photo?v=a1b2c3d4e5f60718' },
+    });
     expect(trip.documents.transports[0]?.docs[0]?.doc).toMatchObject({ kind: 'qr', uri: '' });
     expect(trip.emergencies[0]).toEqual({ id: 'sos-1', title: '🚨 112', subtitle: '', actionLabel: 'Chiama 112', phone: '112', whatsapp: undefined });
   });
@@ -150,6 +153,7 @@ describe('signedUrlPathFor', () => {
     ['api:trips/t1/documents/d1', '/api/trips/t1/documents/d1/url'],
     ['api:trips/t1/memories/m1', '/api/trips/t1/memories/m1/media-url'],
     ['api:me/passport/photo', '/api/me/passport/photo/url'],
+    ['api:me/passport/photo?v=a1b2c3d4e5f60718', '/api/me/passport/photo/url'],
     ['file:///var/mobile/voucher.pdf', null],
     ['api:trips/t1/../../admin', null],
   ])('%s → %s', (uri, path) => {
@@ -170,6 +174,7 @@ describe('memories', () => {
     blurhash: null,
     durationSeconds: 75,
     mimeType: 'video/mp4',
+    mediaUrl: 'https://storage.test/signed/clip.mp4?token=abc',
     reactions: { fire: 2, love: 1 },
     myReaction: 'love',
   };
@@ -179,7 +184,7 @@ describe('memories', () => {
       kind: 'video',
       dayId: 'G2',
       time: '18:42',
-      uri: 'api:trips/trip-1/memories/mem-1',
+      uri: 'https://storage.test/signed/clip.mp4?token=abc',
       durationLabel: '1:15',
       reactions: { '🔥': 2, '❤️': 1 },
       myReaction: '❤️',
