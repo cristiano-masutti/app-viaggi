@@ -1,31 +1,364 @@
 generator client {
-  provider = "prisma-client-js"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
+
+// Gli enum sono in minuscolo di proposito: sono gli stessi valori del modello
+// del mobile (apps/mobile/src/types), dal database all'API senza traduzioni.
+
+/**
+ * ── Utenti ───────────────────────────────────────────────────────────
+ */
+
+/// Utente dell'app. L'id è quello di Supabase Auth (claim `sub`): la riga nasce
+/// alla prima richiesta autenticata, senza una registrazione separata.
+///
+/// Il profilo è privato: lo legge solo il suo proprietario. Ai compagni di
+/// viaggio arrivano nome, cognome e username, mai i dati qui sotto.
+model User {
+  id        String   @id @db.Uuid
+  /// Copia di cortesia: la fonte di verità è Supabase. Può mancare (login via telefono).
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  firstName    String  @default("")
+  lastName     String  @default("")
+  /// Minuscolo e senza '@': l'unicità non dipende da maiuscole e chiocciola.
+  username     String? @unique
+  bio          String  @default("")
+  fiscalCode   String?
+  diet         String  @default("")
+  /// Dato sanitario (GDPR art. 9).
+  medicalNotes String  @default("")
+
+  /// Passaporto Master: uno per persona, riusato da tutti i viaggi.
+  passportNumber    String?
+  /// 'MM/AAAA', come stampato sul documento.
+  passportExpiry    String?
+  passportPhotoPath String?
+
+  memberships       TripMember[]
+  invitationsSent   TripInvitation[]
+  uploadedDocuments Document[]
+  memories          Memory[]
+  reactions         MemoryReaction[]
+}
+
+/**
+ * ── Viaggio e crew ───────────────────────────────────────────────────
+ */
 
 model Trip {
-  id          String      @id @default(uuid())
-  title       String
-  destination String
-  startDate   DateTime
-  endDate     DateTime
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  assets      TripAsset[]
+  id           String   @id @default(uuid()) @db.Uuid
+  /// Comprensivo di emoji bandiera: "Islanda On The Road 🇮🇸".
+  title        String
+  destination  String?
+  /// Solo data, senza orario: un viaggio è fatto di giorni (G1…Gn).
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  /// Posti totali del gruppo: oltre questo numero il link di invito non fa entrare.
+  crewCapacity Int?
+  /// Parte finale del link di invito. Non indovinabile: chi lo conosce entra.
+  inviteCode   String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members     TripMember[]
+  invitations TripInvitation[]
+  documents   Document[]
+  stays       Stay[]
+  activities  Activity[]
+  transports  Transport[]
+  insurance   Insurance?
+  customs     Customs?
+  emergencies EmergencyContact[]
+  memories    Memory[]
 }
 
-model TripAsset {
-  id           String   @id @default(uuid())
-  tripId       String
-  originalName String
-  mimeType     String
-  storagePath  String   @unique
-  publicUrl    String?
-  createdAt    DateTime @default(now())
+enum TripRole {
+  /// Organizza il viaggio: programma, documenti, crew.
+  coordinator
+  /// Partecipa: vede tutto, pubblica ricordi, non modifica l'organizzazione.
+  traveller
+}
+
+/// Chi fa parte di un viaggio e con quale ruolo. È l'unica fonte dei permessi:
+/// senza una riga qui un utente non vede nemmeno che il viaggio esiste.
+model TripMember {
+  tripId   String   @db.Uuid
+  userId   String   @db.Uuid
+  role     TripRole
+  joinedAt DateTime @default(now())
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, userId])
+  @@index([userId])
+}
+
+/// Posto riservato a una persona che non è ancora entrata nel viaggio
+/// ("invitato, non confermato"). Se chi entra col link ha la stessa email,
+/// l'invito si chiude da solo.
+model TripInvitation {
+  id          String    @id @default(uuid()) @db.Uuid
+  tripId      String    @db.Uuid
+  name        String
+  /// Minuscola. Facoltativa: senza email l'invito si chiude solo a mano.
+  email       String?
+  invitedById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+
+  trip      Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  invitedBy User? @relation(fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@index([tripId])
+}
+
+/**
+ * ── Documenti (file) ─────────────────────────────────────────────────
+ */
+
+enum DocumentKind {
+  pdf
+  image
+  /// Il contenuto è `code`: il QR si genera sul telefono, il file è facoltativo.
+  qr
+}
+
+/// Un documento del viaggio (voucher, biglietto, polizza…). Si carica prima e
+/// si collega poi a uno slot (alloggio, attività, mezzo…); `attached` impedisce
+/// che lo stesso documento finisca in due posti. Quando lo slot lo sostituisce
+/// o sparisce, il documento viene cancellato con il suo file.
+model Document {
+  id           String       @id @default(uuid()) @db.Uuid
+  tripId       String       @db.Uuid
+  /// `null` se l'utente che l'ha caricato è stato cancellato: il file resta al viaggio.
+  uploadedById String?      @db.Uuid
+  kind         DocumentKind
+  title        String
+  subtitle     String       @default("")
+  /// Codice pratica mostrato nel viewer (voucher, biglietto, polizza…).
+  code         String       @default("")
+  attached     Boolean      @default(false)
+  originalName String?
+  mimeType     String?
+  sizeBytes    Int?
+  /// Percorso nel bucket privato; `null` per un QR senza file.
+  storagePath  String?      @unique
+  createdAt    DateTime     @default(now())
+
+  trip       Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  uploadedBy User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  stay         Stay?
+  activity     Activity?
+  transportDoc TransportDoc?
+  insurance    Insurance?
+  customs      Customs?
+
+  @@index([tripId])
+}
+
+/**
+ * ── Programma del giorno ─────────────────────────────────────────────
+ */
+
+/// Alloggio del giorno `dayIndex` (1 = primo giorno). Al massimo uno per giorno.
+model Stay {
+  tripId     String   @db.Uuid
+  dayIndex   Int
+  name       String
+  address    String
+  documentId String?  @unique @db.Uuid
+  updatedAt  DateTime @updatedAt
+
+  trip     Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@id([tripId, dayIndex])
+}
+
+model Activity {
+  id         String   @id @default(uuid()) @db.Uuid
+  tripId     String   @db.Uuid
+  dayIndex   Int
+  name       String
+  place      String
+  /// Ordine nella giornata: le nuove attività vanno in fondo.
+  position   Int
+  documentId String?  @unique @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  trip     Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([tripId, dayIndex])
+}
+
+/**
+ * ── Documenti fissi del viaggio ──────────────────────────────────────
+ */
+
+enum TransportMode {
+  van
+  flight
+  ferry
+}
+
+model Transport {
+  id        String        @id @default(uuid()) @db.Uuid
+  tripId    String        @db.Uuid
+  name      String
+  /// Targa, numero volo, molo e orario.
+  reference String        @default("")
+  mode      TransportMode
+  position  Int
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  trip Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  docs TransportDoc[]
+
+  @@index([tripId])
+}
+
+/// Un documento di un mezzo: contratto di noleggio, carta d'imbarco, kasko…
+model TransportDoc {
+  id          String  @id @default(uuid()) @db.Uuid
+  transportId String  @db.Uuid
+  label       String
+  position    Int
+  documentId  String? @unique @db.Uuid
+
+  transport Transport @relation(fields: [transportId], references: [id], onDelete: Cascade)
+  document  Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([transportId])
+}
+
+model Insurance {
+  tripId         String   @id @db.Uuid
+  company        String
+  policy         String
+  coverage       String   @default("")
+  emergencyPhone String   @default("")
+  documentId     String?  @unique @db.Uuid
+  updatedAt      DateTime @updatedAt
+
+  trip     Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+}
+
+/// Modulo doganale o di ingresso del viaggio.
+model Customs {
+  tripId     String   @id @db.Uuid
+  code       String
+  note       String   @default("")
+  documentId String?  @unique @db.Uuid
+  updatedAt  DateTime @updatedAt
+
+  trip     Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+}
+
+/// Card SOS del viaggio, nell'ordine in cui vanno mostrate.
+model EmergencyContact {
+  id          String  @id @default(uuid()) @db.Uuid
+  tripId      String  @db.Uuid
+  title       String
+  subtitle    String  @default("")
+  actionLabel String
+  /// Già normalizzato per `tel:`.
+  phone       String
+  whatsapp    Boolean @default(false)
+  position    Int
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+}
+
+/**
+ * ── Ricordi ──────────────────────────────────────────────────────────
+ */
+
+enum MemoryKind {
+  photo
+  video
+  note
+}
+
+enum MemoryVisibility {
+  /// Visibile a tutta la crew.
+  crew
+  /// Visibile solo a chi l'ha pubblicato.
+  private
+}
+
+enum NoteMood {
+  anecdote
+  place
+  thought
+  personal
+}
+
+enum Reaction {
+  fire
+  laugh
+  love
+  mindblown
+}
+
+model Memory {
+  id         String           @id @default(uuid()) @db.Uuid
+  tripId     String           @db.Uuid
+  authorId   String           @db.Uuid
+  dayIndex   Int
+  kind       MemoryKind
+  visibility MemoryVisibility
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  // Foto e video
+  storagePath     String? @unique
+  mimeType        String?
+  sizeBytes       Int?
+  caption         String?
+  blurhash        String?
+  /// Larghezza / altezza, nota prima del download: la griglia non salta.
+  aspectRatio     Float?
+  durationSeconds Int?
+
+  // Note di diario
+  text String?
+  mood NoteMood?
+
+  trip      Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  author    User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reactions MemoryReaction[]
+
+  @@index([tripId, createdAt])
+}
+
+/// Una reazione per persona per ricordo: la nuova sostituisce la precedente.
+model MemoryReaction {
+  memoryId  String   @db.Uuid
+  userId    String   @db.Uuid
+  reaction  Reaction
+  createdAt DateTime @default(now())
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([memoryId, userId])
 }

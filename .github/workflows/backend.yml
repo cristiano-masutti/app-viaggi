@@ -1,0 +1,84 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/backend/**'
+      - '.github/workflows/backend.yml'
+      - '.nvmrc'
+  pull_request:
+    paths:
+      - 'apps/backend/**'
+      - '.github/workflows/backend.yml'
+      - '.nvmrc'
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: apps/backend
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_viaggi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app_viaggi_test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/backend/package-lock.json
+
+      - name: Install (genera anche il client Prisma)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      # Se schema.prisma è cambiato senza una nuova migrazione, il database
+      # migrato non coincide con lo schema e lo step fallisce.
+      - name: Migrations in sync with schema
+        run: npm run prisma:check
+
+      - name: Test
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
