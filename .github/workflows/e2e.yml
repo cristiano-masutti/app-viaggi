@@ -109,6 +109,7 @@ jobs:
 
       # Solo se tutto è passato: un'immagine di una pagina rotta non diventa il riferimento.
       - name: Committa le immagini di riferimento nuove
+        id: baselines
         if: >-
           success() &&
           (github.event_name == 'workflow_dispatch' ||
@@ -123,6 +124,13 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'test(e2e): immagini di riferimento generate dalla CI'
           git push
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      # Il commit del bot non fa partire un'altra CI: le immagini appena salvate
+      # si confrontano qui, con un secondo giro dei test visivi.
+      - name: Ricontrolla con le immagini appena committate
+        if: steps.baselines.outputs.committed == 'true'
+        run: npx playwright test --project=visual --update-snapshots=none
 
       # Il report HTML mostra, per ogni screenshot che non torna, atteso, ottenuto e differenza.
       - uses: actions/upload-artifact@v4

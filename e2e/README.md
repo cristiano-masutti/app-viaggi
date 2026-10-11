@@ -73,8 +73,8 @@ quando passano.
 ## Le immagini di riferimento
 
 Sono quelle della CI (Linux, il Chromium di Playwright). Quando ne manca una in
-una PR di questo repository, la CI la genera e la committa sul branch, ma solo
-se tutti i test passano. Su `main` e nelle PR da un fork un'immagine mancante è
+una PR di questo repository, la CI la genera, la committa sul branch (solo se
+tutti i test passano) e rifà subito i test visivi contro le immagini salvate. Su `main` e nelle PR da un fork un'immagine mancante è
 un errore: il confronto non può saltare in silenzio. Dopo un cambiamento voluto
 all'aspetto:
 
