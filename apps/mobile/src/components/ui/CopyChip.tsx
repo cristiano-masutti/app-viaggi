@@ -41,6 +41,7 @@ export function CopyChip({ value, label = 'Copia', className }: Props) {
 
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={`Copia ${value}`}
       onPress={() => {
         haptics.confirm();

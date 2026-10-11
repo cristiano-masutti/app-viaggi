@@ -92,6 +92,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
         onHeight={setHeaderHeight}
         right={
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Notifiche"
             onPress={() => {
               /* TODO: centro notifiche */
@@ -169,7 +170,10 @@ function TripsStatusTabs({
   ];
 
   return (
-    <View className="h-[54px] flex-row overflow-hidden rounded-control border border-ink-700 bg-ink-900">
+    <View
+      accessibilityRole="tablist"
+      className="h-[54px] flex-row overflow-hidden rounded-control border border-ink-700 bg-ink-900"
+    >
       {items.map((item) => {
         const active = value === item.key;
 
@@ -212,6 +216,7 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
       </Text>
       <Pressable
         onPress={onRetry}
+        accessibilityRole="button"
         accessibilityLabel="Riprova a caricare i viaggi"
         className="mt-1 h-[42px] items-center justify-center rounded-[14px] bg-tangerine px-5"
       >

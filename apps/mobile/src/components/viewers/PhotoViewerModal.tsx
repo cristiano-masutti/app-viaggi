@@ -49,6 +49,7 @@ export function PhotoViewerModal({
                     haptics.tap();
                     onClose();
                   }}
+                  accessibilityRole="button"
                   accessibilityLabel="Chiudi foto"
                   className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-white/15 bg-white/10"
                 >
@@ -91,6 +92,7 @@ export function PhotoViewerModal({
                   <ReactionBar memory={memory} onToggle={onToggleReaction} />
                   {canDelete && onDelete ? (
                     <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel="Elimina ricordo"
                       onPress={() => {
                         haptics.warn();

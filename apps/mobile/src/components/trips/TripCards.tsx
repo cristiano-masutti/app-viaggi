@@ -60,6 +60,7 @@ export function HeroTripCard({ trip, onPress }: CardProps) {
         haptics.tap();
         onPress();
       }}
+      accessibilityRole="button"
       accessibilityLabel={`Entra nel viaggio ${trip.title}`}
       className="overflow-hidden rounded-hero border border-ink-700 bg-ink-900"
       style={shadow.card}
@@ -107,6 +108,7 @@ export function StandardTripCard({ trip, onPress }: CardProps) {
         haptics.tap();
         onPress();
       }}
+      accessibilityRole="button"
       accessibilityLabel={`Apri il viaggio ${trip.title}`}
       className="overflow-hidden rounded-card border border-ink-700 bg-ink-900"
     >

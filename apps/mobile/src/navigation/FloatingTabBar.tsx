@@ -31,7 +31,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
         { paddingBottom: insets.bottom > 0 ? insets.bottom : FALLBACK_BOTTOM_PADDING },
       ]}
     >
-      <View style={styles.bar}>
+      <View style={styles.bar} accessibilityRole="tablist">
         <BlurView intensity={34} tint="dark" style={styles.absoluteFill} />
         <View pointerEvents="none" style={styles.glassTint} />
         <View pointerEvents="none" style={styles.glassEdge} />

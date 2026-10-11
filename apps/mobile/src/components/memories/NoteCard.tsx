@@ -50,6 +50,7 @@ export function NoteCard({ note, author, dayLabel, mine, onEdit, onDelete }: Pro
               onEdit();
             }}
             hitSlop={8}
+            accessibilityRole="button"
             accessibilityLabel="Modifica nota"
             className="h-7 w-7 items-center justify-center rounded-full border border-cream-ink/15"
           >
@@ -64,6 +65,7 @@ export function NoteCard({ note, author, dayLabel, mine, onEdit, onDelete }: Pro
               onDelete();
             }}
             hitSlop={8}
+            accessibilityRole="button"
             accessibilityLabel="Elimina nota"
             className="h-7 w-7 items-center justify-center rounded-full border border-cream-ink/15"
           >

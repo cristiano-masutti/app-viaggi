@@ -71,6 +71,7 @@ export function SegmentedSwitcher<T extends string>({
 
   return (
     <View
+      accessibilityRole="tablist"
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       className={`flex-row rounded-control border border-ink-700 bg-ink-900 p-[5px] ${className ?? ''}`}
     >

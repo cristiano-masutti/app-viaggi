@@ -41,6 +41,7 @@ export function PrimaryButton({
         onPress();
       }}
       disabled={inactive}
+      accessibilityRole="button"
       accessibilityLabel={label}
       className={`h-[56px] flex-row items-center justify-center gap-2.5 rounded-control ${
         inactive ? 'bg-ink-700' : 'bg-tangerine'
@@ -54,7 +55,7 @@ export function PrimaryButton({
           {icon}
           <Text
             className={`text-[16px] font-extrabold tracking-tight ${
-              inactive ? 'text-bone/45' : 'text-white'
+              inactive ? 'text-bone/60' : 'text-white'
             }`}
           >
             {label}
@@ -93,6 +94,7 @@ export function GhostButton({
         onPress();
       }}
       disabled={disabled}
+      accessibilityRole="button"
       accessibilityLabel={label}
       className={`h-[48px] flex-row items-center justify-center gap-2 rounded-[15px] border ${
         danger ? 'border-danger/25 bg-danger/10' : 'border-ink-700 bg-ink-850'
@@ -135,6 +137,7 @@ export function DocButton({ label, icon, onPress, empty = false, status }: DocBu
         haptics.tap();
         onPress();
       }}
+      accessibilityRole="button"
       accessibilityLabel={label}
       className={`h-[46px] w-full flex-row items-center gap-2.5 rounded-[15px] border px-4 ${
         empty ? 'border-dashed border-ink-700 bg-ink-900' : 'border-ink-700 bg-ink-850'
@@ -169,6 +172,7 @@ export function CallButton({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={`${label}, ${phone}`}
       onPress={() => {
         haptics.confirm();
@@ -204,6 +208,7 @@ export function SoftActionButton({
         haptics.tap();
         onPress();
       }}
+      accessibilityRole="button"
       accessibilityLabel={label}
       className={`h-[50px] flex-row items-center justify-center gap-2 rounded-[15px] border border-ink-700 bg-ink-850 ${
         className ?? ''
