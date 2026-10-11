@@ -7332,30 +7332,37 @@
                                 "type": "boolean"
                               },
                               "passports": {
-                                "type": "object",
-                                "properties": {
-                                  "ready": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "ready": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "total": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "expiring": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "ready",
+                                      "total",
+                                      "expiring"
+                                    ],
+                                    "additionalProperties": false
                                   },
-                                  "total": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
-                                  },
-                                  "expiring": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "ready",
-                                  "total",
-                                  "expiring"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               "issues": {
                                 "type": "array",
@@ -7526,30 +7533,37 @@
                                 "type": "boolean"
                               },
                               "passports": {
-                                "type": "object",
-                                "properties": {
-                                  "ready": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "ready": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "total": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "expiring": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "ready",
+                                      "total",
+                                      "expiring"
+                                    ],
+                                    "additionalProperties": false
                                   },
-                                  "total": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
-                                  },
-                                  "expiring": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "ready",
-                                  "total",
-                                  "expiring"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               "issues": {
                                 "type": "array",
@@ -7806,30 +7820,37 @@
                                 "type": "boolean"
                               },
                               "passports": {
-                                "type": "object",
-                                "properties": {
-                                  "ready": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "ready": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "total": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "expiring": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "ready",
+                                      "total",
+                                      "expiring"
+                                    ],
+                                    "additionalProperties": false
                                   },
-                                  "total": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
-                                  },
-                                  "expiring": {
-                                    "type": "integer",
-                                    "minimum": -9007199254740991,
-                                    "maximum": 9007199254740991
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "ready",
-                                  "total",
-                                  "expiring"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               "issues": {
                                 "type": "array",
@@ -8085,30 +8106,37 @@
                               "type": "boolean"
                             },
                             "passports": {
-                              "type": "object",
-                              "properties": {
-                                "ready": {
-                                  "type": "integer",
-                                  "minimum": -9007199254740991,
-                                  "maximum": 9007199254740991
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "ready": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "total": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "expiring": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "ready",
+                                    "total",
+                                    "expiring"
+                                  ],
+                                  "additionalProperties": false
                                 },
-                                "total": {
-                                  "type": "integer",
-                                  "minimum": -9007199254740991,
-                                  "maximum": 9007199254740991
-                                },
-                                "expiring": {
-                                  "type": "integer",
-                                  "minimum": -9007199254740991,
-                                  "maximum": 9007199254740991
+                                {
+                                  "type": "null"
                                 }
-                              },
-                              "required": [
-                                "ready",
-                                "total",
-                                "expiring"
-                              ],
-                              "additionalProperties": false
+                              ]
                             },
                             "issues": {
                               "type": "array",
@@ -8182,23 +8210,30 @@
                                 "type": "string"
                               },
                               "passport": {
-                                "type": "object",
-                                "properties": {
-                                  "present": {
-                                    "type": "boolean"
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "present": {
+                                        "type": "boolean"
+                                      },
+                                      "expiry": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "present",
+                                      "expiry"
+                                    ],
+                                    "additionalProperties": false
                                   },
-                                  "expiry": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "present",
-                                  "expiry"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               "lastSeenAt": {
                                 "anyOf": [
@@ -8683,30 +8718,37 @@
                               "type": "boolean"
                             },
                             "passports": {
-                              "type": "object",
-                              "properties": {
-                                "ready": {
-                                  "type": "integer",
-                                  "minimum": -9007199254740991,
-                                  "maximum": 9007199254740991
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "ready": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "total": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "expiring": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "ready",
+                                    "total",
+                                    "expiring"
+                                  ],
+                                  "additionalProperties": false
                                 },
-                                "total": {
-                                  "type": "integer",
-                                  "minimum": -9007199254740991,
-                                  "maximum": 9007199254740991
-                                },
-                                "expiring": {
-                                  "type": "integer",
-                                  "minimum": -9007199254740991,
-                                  "maximum": 9007199254740991
+                                {
+                                  "type": "null"
                                 }
-                              },
-                              "required": [
-                                "ready",
-                                "total",
-                                "expiring"
-                              ],
-                              "additionalProperties": false
+                              ]
                             },
                             "issues": {
                               "type": "array",
@@ -8780,23 +8822,30 @@
                                 "type": "string"
                               },
                               "passport": {
-                                "type": "object",
-                                "properties": {
-                                  "present": {
-                                    "type": "boolean"
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "present": {
+                                        "type": "boolean"
+                                      },
+                                      "expiry": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "present",
+                                      "expiry"
+                                    ],
+                                    "additionalProperties": false
                                   },
-                                  "expiry": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
+                                  {
+                                    "type": "null"
                                   }
-                                },
-                                "required": [
-                                  "present",
-                                  "expiry"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               "lastSeenAt": {
                                 "anyOf": [
@@ -9213,23 +9262,30 @@
                           "type": "string"
                         },
                         "passport": {
-                          "type": "object",
-                          "properties": {
-                            "present": {
-                              "type": "boolean"
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "present": {
+                                  "type": "boolean"
+                                },
+                                "expiry": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "present",
+                                "expiry"
+                              ],
+                              "additionalProperties": false
                             },
-                            "expiry": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                            {
+                              "type": "null"
                             }
-                          },
-                          "required": [
-                            "present",
-                            "expiry"
-                          ],
-                          "additionalProperties": false
+                          ]
                         },
                         "lastSeenAt": {
                           "anyOf": [
@@ -9360,23 +9416,30 @@
                           "type": "string"
                         },
                         "passport": {
-                          "type": "object",
-                          "properties": {
-                            "present": {
-                              "type": "boolean"
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "present": {
+                                  "type": "boolean"
+                                },
+                                "expiry": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "present",
+                                "expiry"
+                              ],
+                              "additionalProperties": false
                             },
-                            "expiry": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                            {
+                              "type": "null"
                             }
-                          },
-                          "required": [
-                            "present",
-                            "expiry"
-                          ],
-                          "additionalProperties": false
+                          ]
                         },
                         "lastSeenAt": {
                           "anyOf": [
@@ -9539,23 +9602,30 @@
                             "maximum": 9007199254740991
                           },
                           "passport": {
-                            "type": "object",
-                            "properties": {
-                              "present": {
-                                "type": "boolean"
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "present": {
+                                    "type": "boolean"
+                                  },
+                                  "expiry": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "present",
+                                  "expiry"
+                                ],
+                                "additionalProperties": false
                               },
-                              "expiry": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                              {
+                                "type": "null"
                               }
-                            },
-                            "required": [
-                              "present",
-                              "expiry"
-                            ],
-                            "additionalProperties": false
+                            ]
                           },
                           "lastSeenAt": {
                             "anyOf": [
@@ -9682,23 +9752,30 @@
                           "maximum": 9007199254740991
                         },
                         "passport": {
-                          "type": "object",
-                          "properties": {
-                            "present": {
-                              "type": "boolean"
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "present": {
+                                  "type": "boolean"
+                                },
+                                "expiry": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "present",
+                                "expiry"
+                              ],
+                              "additionalProperties": false
                             },
-                            "expiry": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                            {
+                              "type": "null"
                             }
-                          },
-                          "required": [
-                            "present",
-                            "expiry"
-                          ],
-                          "additionalProperties": false
+                          ]
                         },
                         "lastSeenAt": {
                           "anyOf": [
@@ -9814,23 +9891,30 @@
                           "maximum": 9007199254740991
                         },
                         "passport": {
-                          "type": "object",
-                          "properties": {
-                            "present": {
-                              "type": "boolean"
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "present": {
+                                  "type": "boolean"
+                                },
+                                "expiry": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "present",
+                                "expiry"
+                              ],
+                              "additionalProperties": false
                             },
-                            "expiry": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                            {
+                              "type": "null"
                             }
-                          },
-                          "required": [
-                            "present",
-                            "expiry"
-                          ],
-                          "additionalProperties": false
+                          ]
                         },
                         "lastSeenAt": {
                           "anyOf": [

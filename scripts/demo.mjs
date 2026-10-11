@@ -8,8 +8,13 @@
  * ultimo Expo, in primo piano: il QR da inquadrare con Expo Go. Il telefono
  * raggiunge tutto dall'indirizzo del computer nella rete Wi-Fi.
  *
- *   npm run demo             dati demo da capo, con le date di oggi
- *   npm run demo -- --keep   tiene i dati della demo precedente
+ *   npm run demo                      dati demo da capo, con le date di oggi
+ *   npm run demo -- --keep            tiene i dati della demo precedente
+ *   npm run demo -- --sensitive-data  mostra anche i dati sensibili
+ *
+ * I dati sensibili del profilo (passaporto, codice fiscale, note mediche)
+ * restano spenti di default, nel backend e nell'app: la demo mostra la
+ * versione che non li raccoglie.
  *
  * Variabili facoltative: DEMO_HOST (l'indirizzo da dare al telefono, se quello
  * trovato non va), DEMO_DATABASE_URL (un Postgres già pronto, senza Docker;
@@ -38,6 +43,8 @@ const LOGS = join(ROOT, '.demo');
 const PORTS = { supabase: 54321, api: 4000, panel: 5173, metro: 8081 };
 const WINDOWS = process.platform === 'win32';
 const KEEP = process.argv.includes('--keep');
+/** `SENSITIVE_DATA` del backend e `EXPO_PUBLIC_SENSITIVE_DATA` dell'app: sempre uguali. */
+const SENSITIVE_DATA = process.argv.includes('--sensitive-data') ? 'on' : 'off';
 const COMPOSE = ['compose', '-f', join(DIRS.backend, 'docker-compose.yml')];
 /** La chiave "publishable" del Supabase finto: non controlla niente, serve solo che ci sia. */
 const PUBLISHABLE_KEY = 'demo-publishable-key';
@@ -256,6 +263,7 @@ const backendLog = background('backend', 'npm', ['run', 'dev'], {
     SUPABASE_URL: urls.supabase,
     SUPABASE_SERVICE_ROLE_KEY: 'demo-service-role',
     SUPABASE_STORAGE_BUCKET: 'trip-assets',
+    SENSITIVE_DATA,
     CORS_ORIGIN: [
       `http://localhost:${PORTS.panel}`,
       `http://127.0.0.1:${PORTS.panel}`,
@@ -299,6 +307,11 @@ console.log(`
 
   Islanda in corso (giorno 3 di 10), Lisbona in corso, tre
   partenze in arrivo, cinque settimane di uso e prestazioni.
+  ${
+    SENSITIVE_DATA === 'on'
+      ? 'Dati sensibili accesi: passaporto, codice fiscale, note mediche.'
+      : 'Dati sensibili spenti (per accenderli: --sensitive-data).'
+  }
   Log dei servizi in .demo/ · Ctrl+C chiude tutto.
 ────────────────────────────────────────────────────────────────────
 `);
@@ -315,6 +328,7 @@ expo = spawn(process.execPath, [expoCli, 'start', '--clear', '--port', String(PO
     EXPO_PUBLIC_API_URL: urls.api,
     EXPO_PUBLIC_SUPABASE_URL: urls.supabase,
     EXPO_PUBLIC_SUPABASE_KEY: PUBLISHABLE_KEY,
+    EXPO_PUBLIC_SENSITIVE_DATA: SENSITIVE_DATA,
     // Il QR punta a questo indirizzo anche quando il computer ne ha più d'uno.
     REACT_NATIVE_PACKAGER_HOSTNAME: host,
   },

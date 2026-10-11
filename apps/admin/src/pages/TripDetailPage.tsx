@@ -624,9 +624,11 @@ function Crew({ trip, onSheet }: { trip: AdminTripDetail; onSheet: (sheet: Sheet
                   </span>
                   <LastSeen lastSeenAt={member.lastSeenAt} className="mt-0.5 block text-[12px]" />
                 </span>
-                <span className="hidden sm:block">
-                  <PassportChip passport={member.passport} />
-                </span>
+                {member.passport ? (
+                  <span className="hidden sm:block">
+                    <PassportChip passport={member.passport} />
+                  </span>
+                ) : null}
                 <Button variant="ghost" size="sm" onClick={() => onSheet({ kind: 'member', member })}>
                   Gestisci
                 </Button>
@@ -704,7 +706,7 @@ function Crew({ trip, onSheet }: { trip: AdminTripDetail; onSheet: (sheet: Sheet
   );
 }
 
-function PassportChip({ passport }: { passport: AdminMember['passport'] }) {
+function PassportChip({ passport }: { passport: NonNullable<AdminMember['passport']> }) {
   if (!passport.present) return <StatusChip status="bad" label="Passaporto mancante" />;
   return (
     <StatusChip status="ok" label={passport.expiry ? `Passaporto · ${passport.expiry}` : 'Passaporto'} />
@@ -715,6 +717,7 @@ function PassportChip({ passport }: { passport: AdminMember['passport'] }) {
 
 function ReadinessCard({ trip }: { trip: AdminTripDetail }) {
   const { readiness } = trip;
+  const { passports } = readiness;
   const rows: Array<{ label: string; detail: string; status: Status }> = [
     {
       label: 'Alloggi',
@@ -739,20 +742,17 @@ function ReadinessCard({ trip }: { trip: AdminTripDetail }) {
       detail: readiness.emergencyContacts ? 'presenti' : 'nessuno',
       status: readiness.emergencyContacts ? 'ok' : 'bad',
     },
-    {
+  ];
+  // Senza dati sensibili il server non guarda i passaporti: la riga non c'è.
+  if (passports)
+    rows.push({
       label: 'Passaporti',
       detail:
-        readiness.passports.expiring > 0
-          ? `${readiness.passports.ready}/${readiness.passports.total} · ${readiness.passports.expiring} in scadenza`
-          : `${readiness.passports.ready} su ${readiness.passports.total}`,
-      status:
-        readiness.passports.ready < readiness.passports.total
-          ? 'bad'
-          : readiness.passports.expiring > 0
-            ? 'warn'
-            : 'ok',
-    },
-  ];
+        passports.expiring > 0
+          ? `${passports.ready}/${passports.total} · ${passports.expiring} in scadenza`
+          : `${passports.ready} su ${passports.total}`,
+      status: passports.ready < passports.total ? 'bad' : passports.expiring > 0 ? 'warn' : 'ok',
+    });
   const done = readiness.issues.length === 0;
 
   return (
@@ -774,9 +774,11 @@ function ReadinessCard({ trip }: { trip: AdminTripDetail }) {
           </li>
         ))}
       </ul>
-      <p className="text-[12px] font-semibold text-mist">
-        Passaporti validi almeno 6 mesi dopo il rientro. Il numero resta nel profilo di ognuno.
-      </p>
+      {passports ? (
+        <p className="text-[12px] font-semibold text-mist">
+          Passaporti validi almeno 6 mesi dopo il rientro. Il numero resta nel profilo di ognuno.
+        </p>
+      ) : null}
     </Card>
   );
 }

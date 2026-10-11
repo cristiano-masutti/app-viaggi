@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { sensitiveData } from '@/config';
 import {
+  discardAllVersions,
   discardStoredDocument,
   OFFLINE_STORAGE_SUPPORTED,
   offlineKey,
@@ -71,7 +73,7 @@ export function collectTripDocuments(trip: Trip): DocumentRef[] {
   });
 
   const { passport, customs, transports, insurance } = trip.documents;
-  if (passport?.doc) docs.push(passport.doc);
+  if (sensitiveData && passport?.doc) docs.push(passport.doc);
   if (customs?.doc) docs.push(customs.doc);
   if (insurance?.doc) docs.push(insurance.doc);
   transports.forEach((transport) => {
@@ -107,7 +109,7 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
 
     // Il Passaporto Master del profilo viaggia con l'utente, non con il viaggio:
     // entra nella stessa biblioteca perché serve agli stessi controlli.
-    if (profile.passport.photoUri) {
+    if (sensitiveData && profile.passport.photoUri) {
       byId.set(PROFILE_PASSPORT_DOC_ID, {
         id: PROFILE_PASSPORT_DOC_ID,
         kind: 'image',
@@ -171,6 +173,13 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
    * che promette la conferma "Esci". Non all'avvio dell'app, però: lì si parte
    * sempre dal login, e i documenti salvati devono esserci ancora dopo.
    */
+  // Con i dati sensibili spenti la scansione del passaporto non resta sul
+  // telefono, nemmeno quella salvata da una versione precedente dell'app: la
+  // pulizia degli orfani qui sotto non parte finché non c'è almeno un documento.
+  useEffect(() => {
+    if (!sensitiveData) discardAllVersions(PROFILE_PASSPORT_DOC_ID);
+  }, []);
+
   const wasAuthenticated = useRef(authenticated);
   useEffect(() => {
     const signedOut = wasAuthenticated.current && !authenticated;

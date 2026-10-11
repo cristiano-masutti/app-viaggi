@@ -167,6 +167,25 @@ export function discardStoredDocument(doc: DocumentRef): void {
 }
 
 /**
+ * Cancella ogni copia di un documento, di qualunque versione: serve quando quel
+ * documento non deve più stare sul telefono, nemmeno se l'ha salvato una
+ * versione precedente dell'app (la scansione del passaporto, con i dati
+ * sensibili spenti).
+ */
+export function discardAllVersions(id: string): void {
+  if (!OFFLINE_STORAGE_SUPPORTED) return;
+  try {
+    documentsFolder()
+      .list()
+      .forEach((entry) => {
+        if (entry instanceof File && entry.name.startsWith(`${id}-`)) entry.delete();
+      });
+  } catch {
+    // Ci riprova al prossimo avvio.
+  }
+}
+
+/**
  * Cancella le copie locali che non corrispondono più a nessun documento.
  *
  * Senza questo passaggio ogni voucher sostituito lascerebbe il suo file sul

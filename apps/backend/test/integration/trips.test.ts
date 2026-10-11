@@ -218,6 +218,21 @@ describe('GET /api/trips/:tripId', () => {
       expect(response.body).not.toContain(secret);
     }
   });
+
+  it('leaves my passport out when sensitive data is off', async () => {
+    const { trip, traveller } = await createTripWithCrew();
+    await prisma.user.update({
+      where: { id: traveller.id },
+      data: { passportNumber: 'YA9182773', passportExpiry: '04/2029' },
+    });
+    const { app } = await createTestApp({ config: { SENSITIVE_DATA: false } });
+
+    const response = await (await asUser(app, traveller)).get(`/api/trips/${trip.id}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().trip.documents.passport).toBeNull();
+    expect(response.body).not.toContain('YA9182773');
+  });
 });
 
 describe('PATCH /api/trips/:tripId', () => {

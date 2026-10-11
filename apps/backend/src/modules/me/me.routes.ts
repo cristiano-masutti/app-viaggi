@@ -11,8 +11,18 @@ import { removeStoredFiles } from '../../storage/cleanup.js';
 import { SignedUrlDto } from '../documents/documents.schemas.js';
 import { PassportDto, ProfileDto, toPassportDto, UpdateProfileBody } from './me.schemas.js';
 
-const toProfileDto = (user: User) => ({ ...user, passport: toPassportDto(user) });
 const ProfileResponse = z.object({ user: ProfileDto });
+
+/** I campi che con `SENSITIVE_DATA=off` il server non riceve e non manda. */
+const SENSITIVE_FIELDS = ['fiscalCode', 'diet', 'medicalNotes', 'passport'] as const;
+
+const sensitiveDataOff = () =>
+  new AppError(403, 'SENSITIVE_DATA_DISABLED', 'Sensitive profile data is turned off on this server');
+
+const toProfileDto = (user: User, sensitiveData: boolean) =>
+  sensitiveData
+    ? { ...user, passport: toPassportDto(user) }
+    : { ...user, fiscalCode: null, diet: '', medicalNotes: '', passport: null };
 
 const isUniqueViolation = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
@@ -22,15 +32,22 @@ const isUniqueViolation = (error: unknown) =>
  * sanitari: nessuna route espone il profilo di un altro utente.
  */
 export const meRoutes: FastifyPluginAsyncZod = async (app) => {
+  const sensitiveData = app.config.SENSITIVE_DATA;
+  const requireSensitiveData = async () => {
+    if (!sensitiveData) throw sensitiveDataOff();
+  };
+
   app.get('/me', { schema: { response: { 200: ProfileResponse } } }, async (request) => {
     const user = await app.prisma.user.findUniqueOrThrow({ where: { id: request.user.id } });
-    return { user: toProfileDto(user) };
+    return { user: toProfileDto(user, sensitiveData) };
   });
 
   app.patch(
     '/me',
     { schema: { body: UpdateProfileBody, response: { 200: ProfileResponse } } },
     async (request) => {
+      if (!sensitiveData && SENSITIVE_FIELDS.some((field) => request.body[field] !== undefined))
+        throw sensitiveDataOff();
       const { passport, ...fields } = request.body;
       const current = await app.prisma.user.findUniqueOrThrow({ where: { id: request.user.id } });
 
@@ -55,14 +72,14 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
       }
 
       if (passport === null) await removeStoredFiles(app.storage, request.log, [current.passportPhotoPath]);
-      return { user: toProfileDto(user) };
+      return { user: toProfileDto(user, sensitiveData) };
     },
   );
 
   /** Scansione della pagina dati (foto o PDF). Sostituisce quella precedente. */
   app.put(
     '/me/passport/photo',
-    { schema: { response: { 200: z.object({ passport: PassportDto }) } } },
+    { preHandler: requireSensitiveData, schema: { response: { 200: z.object({ passport: PassportDto }) } } },
     async (request) => {
       const file = requireFile(await readUpload(request, { accept: DOCUMENT_FILE_TYPES }));
       const userId = request.user.id;
@@ -91,18 +108,25 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  app.get('/me/passport/photo/url', { schema: { response: { 200: SignedUrlDto } } }, async (request) => {
-    const { passportPhotoPath } = await app.prisma.user.findUniqueOrThrow({
-      where: { id: request.user.id },
-      select: { passportPhotoPath: true },
-    });
-    if (!passportPhotoPath) throw notFound('Passport photo');
+  app.get(
+    '/me/passport/photo/url',
+    { preHandler: requireSensitiveData, schema: { response: { 200: SignedUrlDto } } },
+    async (request) => {
+      const { passportPhotoPath } = await app.prisma.user.findUniqueOrThrow({
+        where: { id: request.user.id },
+        select: { passportPhotoPath: true },
+      });
+      if (!passportPhotoPath) throw notFound('Passport photo');
 
-    const expiresInSeconds = app.config.SIGNED_URL_TTL_SECONDS;
-    return { url: await app.storage.createSignedUrl(passportPhotoPath, expiresInSeconds), expiresInSeconds };
-  });
+      const expiresInSeconds = app.config.SIGNED_URL_TTL_SECONDS;
+      return {
+        url: await app.storage.createSignedUrl(passportPhotoPath, expiresInSeconds),
+        expiresInSeconds,
+      };
+    },
+  );
 
-  app.delete('/me/passport/photo', async (request, reply) => {
+  app.delete('/me/passport/photo', { preHandler: requireSensitiveData }, async (request, reply) => {
     const { passportPhotoPath } = await app.prisma.user.findUniqueOrThrow({
       where: { id: request.user.id },
       select: { passportPhotoPath: true },

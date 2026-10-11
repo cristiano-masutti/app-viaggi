@@ -49,7 +49,8 @@ export const adminTripInclude = {
 
 export type AdminTripRow = Prisma.TripGetPayload<{ include: typeof adminTripInclude }>;
 
-export function toAdminTripSummary(trip: AdminTripRow, today: Date) {
+/** `sensitiveData`: `config.SENSITIVE_DATA`, spento → niente passaporti nella checklist. */
+export function toAdminTripSummary(trip: AdminTripRow, today: Date, sensitiveData: boolean) {
   const totalDays = countDays(trip.startDate, trip.endDate);
 
   return {
@@ -75,15 +76,19 @@ export function toAdminTripSummary(trip: AdminTripRow, today: Date) {
       hasInsurance: trip.insurance !== null,
       transports: trip._count.transports,
       emergencyContacts: trip._count.emergencies,
-      members: trip.members.map(({ user }) => user),
+      members: sensitiveData ? trip.members.map(({ user }) => user) : null,
     }),
   };
 }
 
-export const passportStatus = (user: { passportNumber: string | null; passportExpiry: string | null }) => ({
-  present: !!user.passportNumber,
-  expiry: user.passportNumber ? user.passportExpiry : null,
-});
+/** Se il passaporto c'è e quando scade, mai il numero. `null` con i dati sensibili spenti. */
+export const passportStatus = (
+  user: { passportNumber: string | null; passportExpiry: string | null },
+  sensitiveData: boolean,
+) =>
+  sensitiveData
+    ? { present: !!user.passportNumber, expiry: user.passportNumber ? user.passportExpiry : null }
+    : null;
 
 /** Ogni parola cercata deve comparire in almeno uno dei campi, senza badare alle maiuscole. */
 export function searchWhere<Field extends string>(q: string | undefined, fields: readonly Field[]) {
@@ -123,7 +128,8 @@ export const toAdminMember = (
       passportExpiry: string | null;
     };
   },
-  lastSeen: Map<string, Date> = new Map(),
+  lastSeen: Map<string, Date>,
+  sensitiveData: boolean,
 ) => ({
   userId: member.userId,
   firstName: member.user.firstName,
@@ -132,7 +138,7 @@ export const toAdminMember = (
   email: member.user.email,
   role: member.role,
   joinedAt: member.joinedAt,
-  passport: passportStatus(member.user),
+  passport: passportStatus(member.user, sensitiveData),
   lastSeenAt: lastSeen.get(member.userId) ?? null,
 });
 
@@ -141,7 +147,12 @@ export const toAdminMember = (
  * riservati, programma, logistica e il numero dei ricordi (mai il contenuto).
  * `null` se il viaggio non esiste.
  */
-export async function loadAdminTripDetail(prisma: PrismaClient, tripId: string, today: Date) {
+export async function loadAdminTripDetail(
+  prisma: PrismaClient,
+  tripId: string,
+  today: Date,
+  sensitiveData: boolean,
+) {
   const [trip, memoriesByKind] = await Promise.all([
     prisma.trip.findUnique({
       where: { id: tripId },
@@ -164,7 +175,7 @@ export async function loadAdminTripDetail(prisma: PrismaClient, tripId: string, 
   ]);
   if (!trip) return null;
 
-  const summary = toAdminTripSummary(trip, today);
+  const summary = toAdminTripSummary(trip, today, sensitiveData);
   const lastSeen = await lastSeenByUser(
     prisma,
     trip.members.map((member) => member.userId),
@@ -176,7 +187,7 @@ export async function loadAdminTripDetail(prisma: PrismaClient, tripId: string, 
     ...summary,
     inviteCode: trip.inviteCode,
     createdAt: trip.createdAt,
-    crew: trip.members.map((member) => toAdminMember(member, lastSeen)),
+    crew: trip.members.map((member) => toAdminMember(member, lastSeen, sensitiveData)),
     invitations: trip.invitations,
     days: Array.from({ length: summary.totalDays }, (_, offset) => {
       const index = offset + 1;

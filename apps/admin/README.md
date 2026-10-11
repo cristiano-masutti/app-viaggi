@@ -32,7 +32,9 @@ chiedere. Il backend deve ammettere l'origine del pannello in `CORS_ORIGIN`.
 
 Lo staff organizza come un coordinatore, con le stesse API dell'app e quindi
 con le stesse regole (capienza, un documento in un solo posto, tipo di file
-controllato dal contenuto, almeno un coordinatore). Due cose restano fuori di
+controllato dal contenuto, almeno un coordinatore). Se il backend ha i dati
+sensibili spenti (`SENSITIVE_DATA=off`) non manda nulla sui passaporti, e il
+pannello toglie chip, righe della checklist e scheda Documenti. Due cose restano fuori di
 proposito: i contenuti dei ricordi (il pannello ne mostra solo il numero) e i
 dati sensibili del profilo (note mediche, codice fiscale, numero di passaporto).
 

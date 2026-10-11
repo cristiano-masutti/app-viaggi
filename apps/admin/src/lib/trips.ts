@@ -50,12 +50,13 @@ export function issueLabel(issue: ReadinessIssue, readiness: AdminTripSummary['r
       return 'Nessun mezzo';
     case 'NO_EMERGENCY_CONTACTS':
       return 'Nessun contatto SOS';
+    // Le due voci dei passaporti arrivano solo quando il server li guarda, quindi con i numeri.
     case 'MISSING_PASSPORTS': {
-      const missing = readiness.passports.total - readiness.passports.ready;
-      return `${plural(missing, 'passaporto mancante', 'passaporti mancanti')}`;
+      const passports = readiness.passports ?? { ready: 0, total: 0 };
+      return `${plural(passports.total - passports.ready, 'passaporto mancante', 'passaporti mancanti')}`;
     }
     case 'PASSPORTS_EXPIRING':
-      return `${plural(readiness.passports.expiring, 'passaporto in scadenza', 'passaporti in scadenza')}`;
+      return `${plural(readiness.passports?.expiring ?? 0, 'passaporto in scadenza', 'passaporti in scadenza')}`;
   }
 }
 

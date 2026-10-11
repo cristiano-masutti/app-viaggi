@@ -38,6 +38,15 @@ const EnvSchema = z.object({
     .int()
     .positive()
     .default(15 * 60),
+  /**
+   * Dati sensibili del profilo: passaporto, codice fiscale, dieta, note mediche.
+   * Con `off` l'API non li manda e non li accetta, e la checklist dello staff
+   * non guarda i passaporti: una versione che non li raccoglie affatto.
+   */
+  SENSITIVE_DATA: z
+    .enum(['on', 'off'])
+    .default('on')
+    .transform((value) => value === 'on'),
 });
 
 export type AppConfig = z.infer<typeof EnvSchema>;

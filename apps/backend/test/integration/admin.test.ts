@@ -506,6 +506,40 @@ describe('people', () => {
   });
 });
 
+describe('with sensitive data turned off', () => {
+  it('shows no passport anywhere: not in the checklist, the crew or the people', async () => {
+    const { app } = await createTestApp({ config: { SENSITIVE_DATA: false } });
+    const api = await asUser(app, await createAdmin());
+    const { sofia, iceland, japan } = await seedTrips();
+
+    const [list, detail, people, person, overview] = await Promise.all([
+      api.get(`/api/admin/trips?today=${TODAY}&status=ongoing`),
+      api.get(`/api/admin/trips/${japan.id}?today=${TODAY}`),
+      api.get('/api/admin/users'),
+      api.get(`/api/admin/users/${sofia.id}?today=${TODAY}`),
+      api.get(`/api/admin/overview?today=${TODAY}`),
+    ]);
+
+    const [card] = list.json().trips;
+    expect(card.id).toBe(iceland.id);
+    expect(card.readiness.passports).toBeNull();
+    expect(card.readiness.issues).toEqual([
+      'MISSING_STAYS',
+      'NO_INSURANCE',
+      'NO_TRANSPORT',
+      'NO_EMERGENCY_CONTACTS',
+    ]);
+    expect(detail.json().trip.crew.map((member: { passport: unknown }) => member.passport)).toEqual([null]);
+    expect(detail.json().trip.readiness).toMatchObject({ passports: null, issues: [] });
+    expect(people.json().users.every((user: { passport: unknown }) => user.passport === null)).toBe(true);
+    expect(person.json().user.passport).toBeNull();
+    for (const response of [list, detail, people, person, overview]) {
+      expect(response.statusCode).toBe(200);
+      expect(response.body).not.toMatch(/04\/2031|01\/2032|MISSING_PASSPORTS/);
+    }
+  });
+});
+
 describe('creating an account', () => {
   it('creates it on Supabase with a temporary password returned once, and here with the name', async () => {
     const { api, accountAdmin } = await asAdmin();

@@ -51,11 +51,12 @@ const toAdminUser = (
     passportExpiry: string | null;
     _count: { memberships: number };
   },
-  lastSeen: Map<string, Date> = new Map(),
+  lastSeen: Map<string, Date>,
+  sensitiveData: boolean,
 ) => ({
   ...user,
   tripCount: _count.memberships,
-  passport: passportStatus({ passportNumber, passportExpiry }),
+  passport: passportStatus({ passportNumber, passportExpiry }, sensitiveData),
   lastSeenAt: lastSeen.get(user.id) ?? null,
 });
 
@@ -90,7 +91,7 @@ export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
         app.prisma,
         users.map((user) => user.id),
       );
-      return { users: users.map((user) => toAdminUser(user, lastSeen)), total };
+      return { users: users.map((user) => toAdminUser(user, lastSeen, app.config.SENSITIVE_DATA)), total };
     },
   );
 
@@ -133,7 +134,7 @@ export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
       const count = (name: string) => usage.find((row) => row.name === name)?._count._all ?? 0;
       return {
         user: {
-          ...toAdminUser(rest, lastSeen),
+          ...toAdminUser(rest, lastSeen, app.config.SENSITIVE_DATA),
           usage: {
             appOpens: count('app_open'),
             screenViews: count('screen_view'),
@@ -205,7 +206,9 @@ export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
       }
 
       request.log.info({ adminId: request.user.id, userId: user.id }, 'Admin created an account');
-      return reply.status(201).send({ user: toAdminUser(user), temporaryPassword });
+      return reply
+        .status(201)
+        .send({ user: toAdminUser(user, new Map(), app.config.SENSITIVE_DATA), temporaryPassword });
     },
   );
 };

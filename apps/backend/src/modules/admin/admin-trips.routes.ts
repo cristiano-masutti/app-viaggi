@@ -64,7 +64,10 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
         app.prisma.trip.count({ where }),
       ]);
 
-      return { trips: trips.map((trip) => toAdminTripSummary(trip, today)), total };
+      return {
+        trips: trips.map((trip) => toAdminTripSummary(trip, today, app.config.SENSITIVE_DATA)),
+        total,
+      };
     },
   );
 
@@ -82,6 +85,7 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
         app.prisma,
         request.params.tripId,
         request.query.today ?? utcToday(),
+        app.config.SENSITIVE_DATA,
       );
       if (!trip) throw notFound('Trip');
       return { trip };
@@ -118,7 +122,12 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       request.log.info({ adminId: request.user.id, tripId: created.id }, 'Admin created a trip');
-      const trip = await loadAdminTripDetail(app.prisma, created.id, request.query.today ?? utcToday());
+      const trip = await loadAdminTripDetail(
+        app.prisma,
+        created.id,
+        request.query.today ?? utcToday(),
+        app.config.SENSITIVE_DATA,
+      );
       return reply.status(201).send({ trip: trip! });
     },
   );
@@ -159,9 +168,9 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       request.log.info({ adminId: request.user.id, tripId, userId, role }, 'Admin added a trip member');
-      return reply
-        .status(201)
-        .send({ member: toAdminMember(member, await lastSeenByUser(app.prisma, [userId])) });
+      return reply.status(201).send({
+        member: toAdminMember(member, await lastSeenByUser(app.prisma, [userId]), app.config.SENSITIVE_DATA),
+      });
     },
   );
 
@@ -192,7 +201,9 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       request.log.info({ adminId: request.user.id, tripId, userId, role }, 'Admin changed a member role');
-      return { member: toAdminMember(member, await lastSeenByUser(app.prisma, [userId])) };
+      return {
+        member: toAdminMember(member, await lastSeenByUser(app.prisma, [userId]), app.config.SENSITIVE_DATA),
+      };
     },
   );
 
