@@ -391,7 +391,7 @@ enum AppPlatform {
 
 /// Un evento d'uso dell'app, per le metriche del pannello. Niente contenuti:
 /// chi, cosa, su quale viaggio, quando. Si cancellano dopo qualche mese
-/// (`npm run events:prune`).
+/// (`npm run telemetry:prune`).
 model AppEvent {
   id         String       @id @default(uuid()) @db.Uuid
   userId     String       @db.Uuid

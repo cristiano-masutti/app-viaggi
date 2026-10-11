@@ -26,6 +26,7 @@
     "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build",
     "staff": "tsx scripts/staff-cli.ts",
     "telemetry:prune": "tsx scripts/telemetry-prune.ts",
+    "seed:demo": "tsx scripts/demo-cli.ts",
     "openapi": "tsx scripts/openapi.ts"
   },
   "dependencies": {
