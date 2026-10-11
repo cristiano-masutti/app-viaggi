@@ -54,14 +54,20 @@ export const ReadinessDto = z.object({
   insurance: z.boolean(),
   transport: z.boolean(),
   emergencyContacts: z.boolean(),
-  passports: z.object({ ready: z.number().int(), total: z.number().int(), expiring: z.number().int() }),
+  /** `null` quando il server non tratta i dati sensibili (`SENSITIVE_DATA=off`). */
+  passports: z
+    .object({ ready: z.number().int(), total: z.number().int(), expiring: z.number().int() })
+    .nullable(),
   issues: z.array(z.enum(READINESS_ISSUES)),
 });
 
 const PersonRef = z.object({ userId: z.uuid(), firstName: z.string(), lastName: z.string() });
 
-/** Solo se c'è e quando scade: il numero resta nel profilo. */
-const PassportStatus = z.object({ present: z.boolean(), expiry: z.string().nullable() });
+/**
+ * Solo se c'è e quando scade: il numero resta nel profilo. `null` quando il
+ * server non tratta i dati sensibili (`SENSITIVE_DATA=off`).
+ */
+const PassportStatus = z.object({ present: z.boolean(), expiry: z.string().nullable() }).nullable();
 
 export const AdminTripSummaryDto = z.object({
   id: z.uuid(),

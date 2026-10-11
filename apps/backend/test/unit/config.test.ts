@@ -20,7 +20,13 @@ describe('loadConfig', () => {
       SUPABASE_STORAGE_BUCKET: 'trip-assets',
       UPLOAD_MAX_BYTES: 15 * 1024 * 1024,
       SIGNED_URL_TTL_SECONDS: 900,
+      SENSITIVE_DATA: true,
     });
+  });
+
+  it('turns sensitive profile data off only with SENSITIVE_DATA=off', () => {
+    expect(loadConfig({ ...validEnv, SENSITIVE_DATA: 'off' }).SENSITIVE_DATA).toBe(false);
+    expect(loadConfig({ ...validEnv, SENSITIVE_DATA: 'on' }).SENSITIVE_DATA).toBe(true);
   });
 
   it('coerces numeric variables from strings', () => {
@@ -48,6 +54,7 @@ describe('loadConfig', () => {
     ['PORT', '-1'],
     ['NODE_ENV', 'staging'],
     ['DATABASE_URL', 'not a url'],
+    ['SENSITIVE_DATA', 'false'],
   ])('rejects an invalid %s (%s)', (key, value) => {
     expect(() => loadConfig({ ...validEnv, [key]: value })).toThrowError(new RegExp(key));
   });

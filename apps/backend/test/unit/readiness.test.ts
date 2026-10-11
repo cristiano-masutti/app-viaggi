@@ -8,6 +8,11 @@ import {
 
 const date = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 
+const passports = [
+  { passportNumber: 'YA1', passportExpiry: '04/2031' },
+  { passportNumber: 'YA2', passportExpiry: '12/2030' },
+];
+
 /** Viaggio di 4 giorni (3 notti), tutto in ordine. */
 const ready: ReadinessInput = {
   startDate: date('2027-09-14'),
@@ -17,10 +22,7 @@ const ready: ReadinessInput = {
   hasInsurance: true,
   transports: 1,
   emergencyContacts: 2,
-  members: [
-    { passportNumber: 'YA1', passportExpiry: '04/2031' },
-    { passportNumber: 'YA2', passportExpiry: '12/2030' },
-  ],
+  members: passports,
 };
 
 describe('assessReadiness', () => {
@@ -53,7 +55,7 @@ describe('assessReadiness', () => {
       hasInsurance: false,
       transports: 0,
       emergencyContacts: 0,
-      members: [{ passportNumber: null, passportExpiry: null }, ready.members[0]!],
+      members: [{ passportNumber: null, passportExpiry: null }, passports[0]!],
     });
 
     expect(empty.issues).toEqual([
@@ -77,13 +79,20 @@ describe('assessReadiness', () => {
       members: [{ passportNumber: 'YA1', passportExpiry: '03/2028' }],
     });
 
-    expect(tooSoon.passports.expiring).toBe(1);
+    expect(tooSoon.passports?.expiring).toBe(1);
     expect(tooSoon.issues).toEqual(['PASSPORTS_EXPIRING']);
     expect(justEnough.issues).toEqual([]);
   });
 
   it('does not count an empty crew as missing passports', () => {
     expect(assessReadiness({ ...ready, members: [] }).issues).toEqual([]);
+  });
+
+  it('leaves passports out entirely when sensitive data is off', () => {
+    const blind = assessReadiness({ ...ready, emergencyContacts: 0, members: null });
+
+    expect(blind.passports).toBeNull();
+    expect(blind.issues).toEqual(['NO_EMERGENCY_CONTACTS']);
   });
 });
 

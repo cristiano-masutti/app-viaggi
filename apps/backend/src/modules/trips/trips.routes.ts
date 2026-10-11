@@ -74,7 +74,13 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       });
 
-      const detail = await loadTripDetail(app.prisma, created.id, userId, TripRole.coordinator);
+      const detail = await loadTripDetail(
+        app.prisma,
+        created.id,
+        userId,
+        TripRole.coordinator,
+        app.config.SENSITIVE_DATA,
+      );
       return reply.status(201).send({ trip: detail });
     },
   );
@@ -86,7 +92,13 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
       '/trips/:tripId',
       { config: MEMBERS_AND_STAFF, schema: { params: TripParams, response: { 200: TripDetailResponse } } },
       async (request) => ({
-        trip: await loadTripDetail(app.prisma, request.trip.id, request.user.id, request.tripRole),
+        trip: await loadTripDetail(
+          app.prisma,
+          request.trip.id,
+          request.user.id,
+          request.tripRole,
+          app.config.SENSITIVE_DATA,
+        ),
       }),
     );
 
@@ -137,7 +149,13 @@ export const tripRoutes: FastifyPluginAsyncZod = async (app) => {
         });
 
         return {
-          trip: await loadTripDetail(app.prisma, tripId, request.user.id, request.tripRole),
+          trip: await loadTripDetail(
+            app.prisma,
+            tripId,
+            request.user.id,
+            request.tripRole,
+            app.config.SENSITIVE_DATA,
+          ),
         };
       },
     );

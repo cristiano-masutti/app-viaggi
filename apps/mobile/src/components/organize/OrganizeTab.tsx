@@ -20,6 +20,7 @@ import { Card, CardRow, SectionHeader } from '@/components/ui/Card';
 import { CopyChip } from '@/components/ui/CopyChip';
 import { DashedPlaceholder } from '@/components/ui/DashedPlaceholder';
 import { FilterChipRow } from '@/components/ui/FilterChipRow';
+import { sensitiveData } from '@/config';
 import { defaultDayId } from '@/lib/trip';
 import type { HeaderScroll } from '@/lib/useHeaderScroll';
 import { palette } from '@/theme/palette';
@@ -201,8 +202,8 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, scrollRef, onEdit
       <View className="gap-3.5">
         <SectionHeader title="Documenti del viaggio" hint="Validi per tutte le tappe" />
 
-        {/* Passaporto personale — arriva dal Profilo */}
-        {passport ? (
+        {/* Passaporto personale — arriva dal Profilo. Non c'è con i dati sensibili spenti. */}
+        {!sensitiveData ? null : passport ? (
           <Card onEdit={() => onEdit({ kind: 'passport' })} editLabel="Aggiorna passaporto">
             <CardRow
               icon={<IdCard size={18} color={palette.text} strokeWidth={1.9} />}

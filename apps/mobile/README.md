@@ -30,6 +30,10 @@ cp .env.example .env   # e compila i tre valori
 npx expo start -c      # -c: le variabili EXPO_PUBLIC_* entrano nel bundle, la cache va svuotata
 ```
 
+`EXPO_PUBLIC_SENSITIVE_DATA=off` toglie dall'app passaporto, codice fiscale e
+note mediche (profilo, tab Organizza, copia offline del passaporto). Va insieme
+a `SENSITIVE_DATA=off` sul backend, che allora non li manda e non li accetta.
+
 Gli account si creano dal pannello di Supabase (Authentication → Users): l'app
 non ha una registrazione autonoma, per scelta del prodotto. Il progetto Supabase
 deve firmare i token con le **JWT Signing Keys** asimmetriche, perché il backend

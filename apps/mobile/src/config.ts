@@ -29,6 +29,13 @@ export const backendConfig: BackendConfig | null =
     ? { apiUrl: apiUrl.replace(/\/+$/, ''), supabaseUrl, supabaseKey }
     : null;
 
+/**
+ * Dati sensibili del profilo: passaporto, codice fiscale, note mediche.
+ * `EXPO_PUBLIC_SENSITIVE_DATA=off` li toglie dall'app; con `SENSITIVE_DATA=off`
+ * anche sul backend è una versione che non li raccoglie affatto.
+ */
+export const sensitiveData = process.env.EXPO_PUBLIC_SENSITIVE_DATA !== 'off';
+
 export type DataMode = 'mock' | 'remote';
 
 export const dataMode: DataMode = backendConfig ? 'remote' : 'mock';

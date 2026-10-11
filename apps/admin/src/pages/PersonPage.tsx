@@ -140,24 +140,27 @@ export function PersonPage() {
                   Negli ultimi 30 giorni. Si contano gli ingressi, mai cosa la persona guarda dentro.
                 </p>
               </Card>
-              <Card className="flex flex-col gap-3 p-4">
-                <h2 className="text-[15px] font-extrabold tracking-tight text-white">Documenti</h2>
-                <div className="flex items-center justify-between gap-3 text-[13px]">
-                  <span className="font-bold text-bone">Passaporto</span>
-                  {person.passport.present ? (
-                    <StatusChip
-                      status="ok"
-                      label={person.passport.expiry ? `scade ${person.passport.expiry}` : 'presente'}
-                    />
-                  ) : (
-                    <StatusChip status="bad" label="manca" />
-                  )}
-                </div>
-                <p className="text-[12px] font-semibold text-mist">
-                  Numero, note mediche e codice fiscale restano nel profilo della persona: il pannello non li
-                  mostra.
-                </p>
-              </Card>
+              {/* Senza dati sensibili il server non dice nulla del passaporto, e la scheda non c'è. */}
+              {person.passport ? (
+                <Card className="flex flex-col gap-3 p-4">
+                  <h2 className="text-[15px] font-extrabold tracking-tight text-white">Documenti</h2>
+                  <div className="flex items-center justify-between gap-3 text-[13px]">
+                    <span className="font-bold text-bone">Passaporto</span>
+                    {person.passport.present ? (
+                      <StatusChip
+                        status="ok"
+                        label={person.passport.expiry ? `scade ${person.passport.expiry}` : 'presente'}
+                      />
+                    ) : (
+                      <StatusChip status="bad" label="manca" />
+                    )}
+                  </div>
+                  <p className="text-[12px] font-semibold text-mist">
+                    Numero, note mediche e codice fiscale restano nel profilo della persona: il pannello non
+                    li mostra.
+                  </p>
+                </Card>
+              ) : null}
               <Card className="flex flex-col gap-1.5 p-4 text-[13px] font-semibold text-mist">
                 <span>
                   Account dal <span className="font-bold text-bone">{dayOf(person.createdAt)}</span>

@@ -31,7 +31,14 @@ const docOf = (slot: { document: Document | null } | null) =>
  * giorni con alloggio e attività, documenti fissi, card SOS. Una sola query
  * per il viaggio più una per il passaporto di chi chiede.
  */
-export async function loadTripDetail(prisma: PrismaClient, tripId: string, userId: string, myRole: TripRole) {
+export async function loadTripDetail(
+  prisma: PrismaClient,
+  tripId: string,
+  userId: string,
+  myRole: TripRole,
+  /** `config.SENSITIVE_DATA`: spento, il passaporto di chi chiede non c'è. */
+  sensitiveData: boolean,
+) {
   const [trip, me] = await Promise.all([
     prisma.trip.findUniqueOrThrow({
       where: { id: tripId },
@@ -78,7 +85,7 @@ export async function loadTripDetail(prisma: PrismaClient, tripId: string, userI
     crew: trip.members.map(toMemberDto),
     days,
     documents: {
-      passport: toPassportDto(me),
+      passport: sensitiveData ? toPassportDto(me) : null,
       customs: trip.customs ? { ...trip.customs, doc: docOf(trip.customs) } : null,
       transports: trip.transports.map((transport) => ({
         ...transport,

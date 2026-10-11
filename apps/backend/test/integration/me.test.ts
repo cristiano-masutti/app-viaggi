@@ -142,3 +142,76 @@ describe('passport photo', () => {
     expect(storage.objects.size).toBe(1);
   });
 });
+
+describe('with sensitive data turned off', () => {
+  const SECRETS = ['YA9182773', 'RSSMRC88T10H501K', 'Vegetariano', 'arachidi'];
+
+  async function setupOff() {
+    const user = await createUser({
+      email: 'marco@example.test',
+      passportNumber: 'YA9182773',
+      passportExpiry: '04/2029',
+      passportPhotoPath: 'users/marco/passport/scan.jpg',
+      fiscalCode: 'RSSMRC88T10H501K',
+      diet: 'Vegetariano',
+      medicalNotes: 'Allergia alle arachidi',
+    });
+    const testApp = await createTestApp({ config: { SENSITIVE_DATA: false } });
+    return { user, ...testApp, api: await asUser(testApp.app, { id: user.id, email: 'marco@example.test' }) };
+  }
+
+  it('never sends passport, fiscal code, diet or medical notes, even when stored', async () => {
+    const { api } = await setupOff();
+
+    const response = await api.get('/api/me');
+
+    expect(response.json().user).toMatchObject({
+      fiscalCode: null,
+      diet: '',
+      medicalNotes: '',
+      passport: null,
+    });
+    for (const secret of SECRETS) expect(response.body).not.toContain(secret);
+  });
+
+  it('refuses to store them, and still saves the rest of the profile', async () => {
+    const { api, user } = await setupOff();
+
+    for (const body of [
+      { fiscalCode: 'RSSMRC88T10H501K' },
+      { diet: 'Vegano' },
+      { medicalNotes: '' },
+      { passport: null },
+      { bio: 'Ciao', passport: { number: 'YA1234567', expiry: '01/2030' } },
+    ]) {
+      const response = await api.patch('/api/me', body);
+      expect(response.statusCode, JSON.stringify(body)).toBe(403);
+      expect(response.json().error.code).toBe('SENSITIVE_DATA_DISABLED');
+    }
+    const saved = await api.patch('/api/me', { firstName: 'Marco', bio: 'Ciao' });
+
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json().user).toMatchObject({ firstName: 'Marco', bio: 'Ciao', passport: null });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).toMatchObject({
+      bio: 'Ciao',
+      diet: 'Vegetariano',
+      passportNumber: 'YA9182773',
+    });
+  });
+
+  it('closes the passport photo routes', async () => {
+    const { api, storage } = await setupOff();
+
+    const responses = [
+      await api.put('/api/me/passport/photo', fileForm(JPEG)),
+      await api.get('/api/me/passport/photo/url'),
+      await api.delete('/api/me/passport/photo'),
+    ];
+
+    for (const response of responses) {
+      expect(response.statusCode).toBe(403);
+      expect(response.json().error.code).toBe('SENSITIVE_DATA_DISABLED');
+    }
+    expect(storage.objects.size).toBe(0);
+  });
+});

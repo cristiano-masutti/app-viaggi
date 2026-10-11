@@ -57,7 +57,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
           app.prisma.memory.count({ where: { createdAt: { gte: weekAgo } } }),
         ]);
 
-      const summaries = activeTrips.map((trip) => toAdminTripSummary(trip, today));
+      const summaries = activeTrips.map((trip) => toAdminTripSummary(trip, today, app.config.SENSITIVE_DATA));
       const withCapacity = summaries.filter((trip) => trip.crewCapacity !== null);
 
       return {

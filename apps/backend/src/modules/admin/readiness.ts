@@ -25,7 +25,8 @@ export interface ReadinessInput {
   hasInsurance: boolean;
   transports: number;
   emergencyContacts: number;
-  members: Array<{ passportNumber: string | null; passportExpiry: string | null }>;
+  /** `null` con i dati sensibili spenti: i passaporti non si guardano. */
+  members: Array<{ passportNumber: string | null; passportExpiry: string | null }> | null;
 }
 
 export interface Readiness {
@@ -34,8 +35,8 @@ export interface Readiness {
   insurance: boolean;
   transport: boolean;
   emergencyContacts: boolean;
-  /** Chi ha il passaporto nel profilo, e quanti scadono troppo presto. */
-  passports: { ready: number; total: number; expiring: number };
+  /** Chi ha il passaporto nel profilo, e quanti scadono troppo presto. `null` con i dati sensibili spenti. */
+  passports: { ready: number; total: number; expiring: number } | null;
   issues: ReadinessIssue[];
 }
 
@@ -66,7 +67,7 @@ export function assessReadiness(input: ReadinessInput): Readiness {
   const needed = Math.max(0, input.totalDays - 1);
   const covered = new Set(input.stayDays.filter((day) => day >= 1 && day <= needed)).size;
 
-  const withPassport = input.members.filter((member) => member.passportNumber);
+  const withPassport = input.members?.filter((member) => member.passportNumber) ?? [];
   const expiring = withPassport.filter((member) =>
     expiresTooSoon(member.passportExpiry, input.endDate),
   ).length;
@@ -76,7 +77,7 @@ export function assessReadiness(input: ReadinessInput): Readiness {
     insurance: input.hasInsurance,
     transport: input.transports > 0,
     emergencyContacts: input.emergencyContacts > 0,
-    passports: { ready: withPassport.length, total: input.members.length, expiring },
+    passports: input.members && { ready: withPassport.length, total: input.members.length, expiring },
   };
 
   const issues: ReadinessIssue[] = [];
@@ -84,7 +85,7 @@ export function assessReadiness(input: ReadinessInput): Readiness {
   if (!readiness.insurance) issues.push('NO_INSURANCE');
   if (!readiness.transport) issues.push('NO_TRANSPORT');
   if (!readiness.emergencyContacts) issues.push('NO_EMERGENCY_CONTACTS');
-  if (withPassport.length < input.members.length) issues.push('MISSING_PASSPORTS');
+  if (input.members && withPassport.length < input.members.length) issues.push('MISSING_PASSPORTS');
   if (expiring > 0) issues.push('PASSPORTS_EXPIRING');
 
   return { ...readiness, issues };

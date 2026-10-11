@@ -26,9 +26,16 @@ deploy. Serve:
 - telefono e computer sulla **stessa rete Wi-Fi**.
 
 ```bash
-npm run demo             # dati demo da capo, con le date di oggi
-npm run demo -- --keep   # tiene i dati (e le modifiche) della demo precedente
+npm run demo                      # dati demo da capo, con le date di oggi
+npm run demo -- --keep            # tiene i dati (e le modifiche) della demo precedente
+npm run demo -- --sensitive-data  # mostra anche passaporto, codice fiscale e note mediche
 ```
+
+I dati sensibili restano spenti di default: la demo mostra l'app senza
+passaporto, codice fiscale e note mediche, nel profilo, in *Organizza* e nel
+pannello. Voucher, biglietti e gli altri documenti di viaggio ci sono. Il codice
+c'è tutto: si accende con `--sensitive-data` (in produzione con
+`SENSITIVE_DATA` sul backend ed `EXPO_PUBLIC_SENSITIVE_DATA` nell'app).
 
 La prima volta installa le dipendenze (qualche minuto). Poi stampa l'indirizzo
 del pannello, gli account e il QR da inquadrare con Expo Go. Ctrl+C chiude

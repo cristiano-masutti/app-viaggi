@@ -132,13 +132,16 @@ function PersonRow({ person }: { person: AdminUser }) {
         <span className="text-bone/30">·</span>
         <LastSeen lastSeenAt={person.lastSeenAt} />
       </span>
-      <span>
-        {person.passport.present ? (
-          <StatusChip status="ok" label="Passaporto" />
-        ) : (
-          <StatusChip status="bad" label="Senza passaporto" />
-        )}
-      </span>
+      {/* Senza dati sensibili il server non dice nulla dei passaporti: la colonna resta vuota. */}
+      {person.passport ? (
+        <span>
+          {person.passport.present ? (
+            <StatusChip status="ok" label="Passaporto" />
+          ) : (
+            <StatusChip status="bad" label="Senza passaporto" />
+          )}
+        </span>
+      ) : null}
     </Link>
   );
 }

@@ -9,6 +9,7 @@ import {
   storedDocument,
   type StoredDocument,
 } from '@/lib/offlineDocuments';
+import { sensitiveData } from '@/config';
 import { PROFILE_PASSPORT_DOC_ID } from '@/lib/documentIds';
 import { useAppState, useFileUrlResolver } from '@/store/AppStore';
 import type { DocumentRef, Trip } from '@/types';
@@ -71,7 +72,7 @@ export function collectTripDocuments(trip: Trip): DocumentRef[] {
   });
 
   const { passport, customs, transports, insurance } = trip.documents;
-  if (passport?.doc) docs.push(passport.doc);
+  if (sensitiveData && passport?.doc) docs.push(passport.doc);
   if (customs?.doc) docs.push(customs.doc);
   if (insurance?.doc) docs.push(insurance.doc);
   transports.forEach((transport) => {
@@ -107,7 +108,7 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
 
     // Il Passaporto Master del profilo viaggia con l'utente, non con il viaggio:
     // entra nella stessa biblioteca perché serve agli stessi controlli.
-    if (profile.passport.photoUri) {
+    if (sensitiveData && profile.passport.photoUri) {
       byId.set(PROFILE_PASSPORT_DOC_ID, {
         id: PROFILE_PASSPORT_DOC_ID,
         kind: 'image',

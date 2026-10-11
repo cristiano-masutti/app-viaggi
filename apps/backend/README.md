@@ -103,6 +103,14 @@ manda date ISO e il client le presenta.
 - **Profilo.** Lo legge solo il proprietario. Ai compagni di viaggio arrivano
   nome, cognome e username, mai email, codice fiscale, passaporto, dieta o note
   mediche.
+- **Dati sensibili, spegnibili.** Con `SENSITIVE_DATA=off` il server non tratta
+  passaporto, codice fiscale, dieta e note mediche: `/api/me` non li manda
+  (`passport: null`, gli altri vuoti), rifiuta di salvarli e le route della foto
+  del passaporto rispondono `403 SENSITIVE_DATA_DISABLED`. Il passaporto sparisce
+  anche dal dettaglio del viaggio, e per lo staff dalla crew, dalle persone e
+  dalla checklist (`passports: null`, mai `MISSING_PASSPORTS`). È la versione
+  per partire senza quei dati; l'app va costruita con
+  `EXPO_PUBLIC_SENSITIVE_DATA=off`, il pannello si adatta da solo.
 
 ### Le regole
 

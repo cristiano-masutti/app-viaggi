@@ -2738,7 +2738,7 @@ export interface paths {
                                         ready: number;
                                         total: number;
                                         expiring: number;
-                                    };
+                                    } | null;
                                     issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
                                 };
                             }[];
@@ -2776,7 +2776,7 @@ export interface paths {
                                         ready: number;
                                         total: number;
                                         expiring: number;
-                                    };
+                                    } | null;
                                     issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
                                 };
                             }[];
@@ -2857,7 +2857,7 @@ export interface paths {
                                         ready: number;
                                         total: number;
                                         expiring: number;
-                                    };
+                                    } | null;
                                     issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
                                 };
                             }[];
@@ -2935,7 +2935,7 @@ export interface paths {
                                         ready: number;
                                         total: number;
                                         expiring: number;
-                                    };
+                                    } | null;
                                     issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
                                 };
                                 inviteCode: string;
@@ -2955,7 +2955,7 @@ export interface paths {
                                     passport: {
                                         present: boolean;
                                         expiry: string | null;
-                                    };
+                                    } | null;
                                     lastSeenAt: string | null;
                                 }[];
                                 invitations: {
@@ -3088,7 +3088,7 @@ export interface paths {
                                         ready: number;
                                         total: number;
                                         expiring: number;
-                                    };
+                                    } | null;
                                     issues: ("MISSING_STAYS" | "NO_INSURANCE" | "NO_TRANSPORT" | "NO_EMERGENCY_CONTACTS" | "MISSING_PASSPORTS" | "PASSPORTS_EXPIRING")[];
                                 };
                                 inviteCode: string;
@@ -3108,7 +3108,7 @@ export interface paths {
                                     passport: {
                                         present: boolean;
                                         expiry: string | null;
-                                    };
+                                    } | null;
                                     lastSeenAt: string | null;
                                 }[];
                                 invitations: {
@@ -3234,7 +3234,7 @@ export interface paths {
                                 passport: {
                                     present: boolean;
                                     expiry: string | null;
-                                };
+                                } | null;
                                 lastSeenAt: string | null;
                             };
                         };
@@ -3321,7 +3321,7 @@ export interface paths {
                                 passport: {
                                     present: boolean;
                                     expiry: string | null;
-                                };
+                                } | null;
                                 lastSeenAt: string | null;
                             };
                         };
@@ -3374,7 +3374,7 @@ export interface paths {
                                 passport: {
                                     present: boolean;
                                     expiry: string | null;
-                                };
+                                } | null;
                                 lastSeenAt: string | null;
                             }[];
                             total: number;
@@ -3423,7 +3423,7 @@ export interface paths {
                                 passport: {
                                     present: boolean;
                                     expiry: string | null;
-                                };
+                                } | null;
                                 lastSeenAt: string | null;
                             };
                             temporaryPassword: string;
@@ -3480,7 +3480,7 @@ export interface paths {
                                 passport: {
                                     present: boolean;
                                     expiry: string | null;
-                                };
+                                } | null;
                                 lastSeenAt: string | null;
                                 usage: {
                                     appOpens: number;
