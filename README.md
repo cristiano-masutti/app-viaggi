@@ -11,6 +11,11 @@ gira lint, typecheck, test su Postgres e build; il mobile typecheck, test e il
 controllo che i tipi dell'API siano allineati alla specifica del backend; il
 pannello lint, formato, tipi, test, build e lo stesso controllo dei tipi.
 
+Sopra a tutto, gli **smoke test** di [e2e/](./e2e) aprono pannello e app (build
+web) in Chromium contro backend, Postgres e un Supabase finto: flussi
+principali, budget di velocità e fluidità, regole di layout e accessibilità e
+confronto con le immagini di riferimento.
+
 ## Prerequisiti
 
 - Node `^22.13.0 || >=24.3.0` (vedi [.nvmrc](./.nvmrc))
@@ -56,6 +61,19 @@ npm run backend:prisma:migrate
 npm run backend:dev
 npm run backend:test      # test di unità e integrazione
 npm run backend:verify    # lint, format, typecheck, test e build (come la CI, tranne il controllo delle migrazioni)
+```
+
+### Smoke test e controlli visivi
+
+Serve un Postgres con un database `app_viaggi_e2e` (vedi [e2e/README.md](./e2e/README.md)).
+
+```bash
+npm run e2e:install
+npx --prefix e2e playwright install chromium
+npm run e2e:build          # backend, pannello e app web per gli e2e
+npm run e2e:test
+npm run e2e:report         # il report, con le differenze degli screenshot
+npm run backend:seed:demo  # gli stessi dati demo, in un database "…_demo"
 ```
 
 ## Note

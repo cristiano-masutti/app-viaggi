@@ -26,6 +26,10 @@
     "admin:test": "npm --prefix apps/admin test",
     "admin:verify": "npm --prefix apps/admin run verify",
     "admin:api-types": "npm --prefix apps/admin run api:types",
+    "e2e:install": "npm --prefix e2e install",
+    "e2e:build": "npm --prefix e2e run build",
+    "e2e:test": "npm --prefix e2e test",
+    "e2e:report": "npm --prefix e2e run report",
     "backend:install": "npm --prefix apps/backend install",
     "backend:db:up": "docker compose -f apps/backend/docker-compose.yml up -d --wait",
     "backend:dev": "npm --prefix apps/backend run dev",
@@ -34,6 +38,7 @@
     "backend:verify": "npm --prefix apps/backend run verify",
     "backend:openapi": "npm --prefix apps/backend run openapi",
     "backend:staff": "npm --prefix apps/backend run staff --",
+    "backend:seed:demo": "npm --prefix apps/backend run seed:demo",
     "backend:prisma:generate": "npm --prefix apps/backend run prisma:generate",
     "backend:prisma:migrate": "npm --prefix apps/backend run prisma:migrate"
   }

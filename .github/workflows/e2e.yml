@@ -1,0 +1,124 @@
+name: E2E
+
+# Pannello e app (build web) nel browser, contro backend, Postgres e un
+# Supabase finto: flussi principali, budget di velocità e fluidità, regole di
+# layout e accessibilità, confronto con le immagini di riferimento.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'e2e/**'
+      - '.github/workflows/e2e.yml'
+      - '.nvmrc'
+  pull_request:
+    paths:
+      - 'apps/**'
+      - 'e2e/**'
+      - '.github/workflows/e2e.yml'
+      - '.nvmrc'
+  workflow_dispatch:
+    inputs:
+      update-screenshots:
+        description: 'Rigenera tutte le immagini di riferimento e le committa sul branch'
+        type: boolean
+        default: false
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Smoke, prestazioni e controlli visivi
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Solo per committare le immagini di riferimento che mancano (o rigenerate a mano).
+      contents: write
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_viaggi_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
+    defaults:
+      run:
+        working-directory: e2e
+
+    steps:
+      # Sul branch della PR, non sul merge: così le immagini nuove si possono committare lì.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            apps/backend/package-lock.json
+            apps/admin/package-lock.json
+            apps/mobile/package-lock.json
+            e2e/package-lock.json
+
+      - name: Dipendenze
+        run: |
+          npm ci --prefix ../apps/backend
+          npm ci --prefix ../apps/admin
+          npm ci --prefix ../apps/mobile
+          npm ci
+
+      - run: npm run format:check
+      - run: npm run typecheck
+
+      - name: Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build di backend, pannello e app web
+        run: npm run build
+
+      # Le immagini che mancano si scrivono (e si committano sotto); quelle che
+      # ci sono si confrontano. A mano, dal workflow_dispatch, si rigenerano tutte.
+      - name: Test
+        run: npx playwright test --update-snapshots=${{ inputs.update-screenshots && 'all' || 'missing' }}
+
+      # Solo se tutto è passato: un'immagine di una pagina rotta non diventa il riferimento.
+      - name: Committa le immagini di riferimento nuove
+        if: >-
+          success() &&
+          (github.event_name == 'workflow_dispatch' ||
+           (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+        run: |
+          git add tests/__screenshots__
+          if git diff --cached --quiet; then
+            echo "Nessuna immagine nuova."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test(e2e): immagini di riferimento generate dalla CI'
+          git push
+
+      # Il report HTML mostra, per ogni screenshot che non torna, atteso, ottenuto e differenza.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
