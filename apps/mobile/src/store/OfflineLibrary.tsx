@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { sensitiveData } from '@/config';
 import {
+  discardAllVersions,
   discardStoredDocument,
   OFFLINE_STORAGE_SUPPORTED,
   offlineKey,
@@ -9,7 +11,6 @@ import {
   storedDocument,
   type StoredDocument,
 } from '@/lib/offlineDocuments';
-import { sensitiveData } from '@/config';
 import { PROFILE_PASSPORT_DOC_ID } from '@/lib/documentIds';
 import { useAppState, useFileUrlResolver } from '@/store/AppStore';
 import type { DocumentRef, Trip } from '@/types';
@@ -172,6 +173,13 @@ export function OfflineLibraryProvider({ children }: { children: React.ReactNode
    * che promette la conferma "Esci". Non all'avvio dell'app, però: lì si parte
    * sempre dal login, e i documenti salvati devono esserci ancora dopo.
    */
+  // Con i dati sensibili spenti la scansione del passaporto non resta sul
+  // telefono, nemmeno quella salvata da una versione precedente dell'app: la
+  // pulizia degli orfani qui sotto non parte finché non c'è almeno un documento.
+  useEffect(() => {
+    if (!sensitiveData) discardAllVersions(PROFILE_PASSPORT_DOC_ID);
+  }, []);
+
   const wasAuthenticated = useRef(authenticated);
   useEffect(() => {
     const signedOut = wasAuthenticated.current && !authenticated;
