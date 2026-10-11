@@ -193,6 +193,21 @@ if (!databaseUrl) {
   databaseUrl = 'postgresql://postgres:postgres@127.0.0.1:5432/app_viaggi_demo';
 }
 
+// Lo stesso controllo del seed, ma prima di toccare il database: anche le
+// migrazioni e `--keep` partono solo su un database di prova.
+const databaseName = (() => {
+  try {
+    return decodeURIComponent(new URL(databaseUrl).pathname.slice(1));
+  } catch {
+    return '';
+  }
+})();
+if (!/demo|e2e/i.test(databaseName))
+  fail(
+    `La demo modifica il database: "${databaseName || databaseUrl}" non sembra uno di prova. ` +
+      'Usa un database con "demo" o "e2e" nel nome.',
+  );
+
 step('Migrazioni');
 run('npx', ['prisma', 'migrate', 'deploy'], {
   cwd: DIRS.backend,
