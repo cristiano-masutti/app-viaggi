@@ -60,11 +60,21 @@ test('lo staff carica un voucher nel viaggio e lo apre', async ({ page, context 
   const day7 = page
     .getByText('Hótel Búðir')
     .locator('xpath=ancestor::*[.//button[contains(., "Prenotazione")]][1]');
+  // La scheda si apre subito (vuota, per non essere bloccata) e va all'URL quando il backend lo firma.
+  // Cosa fa poi il browser con un PDF (mostrarlo o scaricarlo) dipende dalla versione: conta la richiesta.
+  const signed = context.waitForEvent('request', (request) =>
+    /\/storage\/v1\/object\/sign\/trip-assets\/trips\/.+\.pdf/.test(request.url()),
+  );
   const opened = context.waitForEvent('page');
   await day7.getByRole('button', { name: 'Prenotazione' }).click();
-  // La scheda si apre subito (vuota, per non essere bloccata) e riceve l'URL quando il backend lo firma.
-  const tab = await opened;
-  await tab.waitForURL(/\/storage\/v1\/object\/sign\/trip-assets\/trips\/.+\.pdf/);
+  const [tab, request] = await Promise.all([opened, signed]);
+  expect(request.frame().page()).toBe(tab);
+
+  // E all'URL firmato c'è proprio il file caricato.
+  const file = await page.request.get(request.url());
+  expect(file.status()).toBe(200);
+  expect(file.headers()['content-type']).toBe('application/pdf');
+  expect(await file.body()).toEqual(VOUCHER.buffer);
   await tab.close();
 });
 
