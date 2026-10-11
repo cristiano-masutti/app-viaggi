@@ -45,7 +45,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-dvh bg-ink-950 lg:grid-cols-[1.1fr_1fr]">
+    <div className="grid min-h-dvh grid-cols-1 bg-ink-950 lg:grid-cols-[1.1fr_1fr]">
       <div className="relative h-[300px] overflow-hidden lg:h-auto">
         <img
           src="/login-hero.webp"
@@ -120,7 +120,8 @@ export function LoginPage() {
             disabled={loading}
             className={cn(
               'mt-4 flex h-[60px] items-center justify-center gap-2 rounded-control border-2 border-tangerine text-[18px] font-extrabold tracking-tight transition-colors',
-              canSubmit ? 'bg-tangerine text-bone shadow-glow' : 'bg-transparent text-tangerine',
+              // Sul fondo nero il rosso pieno come testo non si legge abbastanza (3,2:1): il tenue sì.
+              canSubmit ? 'bg-tangerine text-bone shadow-glow' : 'bg-transparent text-tangerine-soft',
             )}
           >
             {loading ? (
@@ -132,7 +133,7 @@ export function LoginPage() {
             {loading ? 'Verifica…' : 'Accedi'}
           </button>
 
-          <p className="mt-8 text-center text-[13px] font-semibold text-bone/40">
+          <p className="mt-8 text-center text-[13px] font-semibold text-mist">
             Le credenziali sono le stesse dell'app.
           </p>
         </form>

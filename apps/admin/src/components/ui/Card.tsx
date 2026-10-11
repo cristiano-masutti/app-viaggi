@@ -24,7 +24,7 @@ export function SectionLabel({
       <h2
         className={cn(
           'text-[11.5px] font-extrabold tracking-[1.2px] uppercase',
-          accent ? 'text-tangerine-soft' : 'text-bone/45',
+          accent ? 'text-tangerine-soft' : 'text-bone/60',
         )}
       >
         {children}

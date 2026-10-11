@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 
 import { useUser } from '@/api/queries';
 import { PageBody, PageHeader } from '@/components/layout/PageHeader';
+import { LastSeen } from '@/components/people/LastSeen';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Card, SectionLabel } from '@/components/ui/Card';
@@ -11,6 +12,7 @@ import { QueryError } from '@/components/ui/QueryError';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { dateRange, dayOf, todayISO } from '@/lib/dates';
+import { formatCount } from '@/lib/metrics';
 import { fullName, ROLE_LABELS } from '@/lib/people';
 import { tripBadge } from '@/lib/trips';
 
@@ -66,7 +68,7 @@ export function PersonPage() {
         {!person ? (
           <Skeleton className="h-[200px] rounded-card" />
         ) : (
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
             <section className="flex flex-col gap-3.5" aria-labelledby="trips">
               <SectionLabel accent hint={`${person.trips.length} in tutto`}>
                 <span id="trips">Viaggi</span>
@@ -113,6 +115,31 @@ export function PersonPage() {
               )}
             </section>
             <aside className="flex flex-col gap-5">
+              <Card className="flex flex-col gap-3 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-[15px] font-extrabold tracking-tight text-white">Nell'app</h2>
+                  <LastSeen lastSeenAt={person.lastSeenAt} className="text-[12.5px]" />
+                </div>
+                <dl className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      ['Ingressi', person.usage.appOpens],
+                      ['Schermate', person.usage.screenViews],
+                      ['Documenti', person.usage.documentOpens],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label} className="rounded-[16px] border border-ink-700 bg-ink-850 px-3 py-2.5">
+                      <dt className="text-[11.5px] font-bold text-mist">{label}</dt>
+                      <dd className="text-[20px] leading-tight font-extrabold text-bone">
+                        {formatCount(value)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="text-[12px] font-semibold text-mist">
+                  Negli ultimi 30 giorni. Si contano gli ingressi, mai cosa la persona guarda dentro.
+                </p>
+              </Card>
               <Card className="flex flex-col gap-3 p-4">
                 <h2 className="text-[15px] font-extrabold tracking-tight text-white">Documenti</h2>
                 <div className="flex items-center justify-between gap-3 text-[13px]">

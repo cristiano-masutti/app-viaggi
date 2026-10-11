@@ -12,6 +12,7 @@ import { createSupabase } from '@/auth/supabase';
 import { ToastProvider } from '@/components/ui/Toast';
 import { config } from '@/config';
 import { MissingConfigPage } from '@/pages/MissingConfigPage';
+import { PanelTelemetry, startPanelTelemetry } from '@/telemetry';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,11 +30,13 @@ if (!config) {
   root.render(<MissingConfigPage />);
 } else {
   const supabase = createSupabase(config);
+  const telemetry = new PanelTelemetry();
+  startPanelTelemetry(telemetry);
   root.render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <AuthProvider client={supabase}>
-          <ApiProvider baseUrl={config.apiUrl}>
+          <ApiProvider baseUrl={config.apiUrl} telemetry={telemetry}>
             <ToastProvider>
               <AdminGate />
             </ToastProvider>

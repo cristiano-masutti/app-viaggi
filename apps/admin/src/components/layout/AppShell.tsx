@@ -1,4 +1,4 @@
-import { Backpack, LayoutDashboard, LogOut, Users } from 'lucide-react';
+import { Activity, Backpack, Gauge, LayoutDashboard, LogOut, Users } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 
 import type { AdminSession } from '@/api/types';
@@ -8,14 +8,17 @@ import { fullName } from '@/lib/people';
 
 import { BrandMark } from './BrandMark';
 
+/** `short` è il nome nella barra del telefono, dove lo spazio è poco. */
 const NAV = [
-  { to: '/', label: 'Panoramica', Icon: LayoutDashboard, end: true },
-  { to: '/viaggi', label: 'Viaggi', Icon: Backpack, end: false },
-  { to: '/persone', label: 'Persone', Icon: Users, end: false },
+  { to: '/', label: 'Panoramica', short: 'Home', Icon: LayoutDashboard, end: true },
+  { to: '/viaggi', label: 'Viaggi', short: 'Viaggi', Icon: Backpack, end: false },
+  { to: '/persone', label: 'Persone', short: 'Persone', Icon: Users, end: false },
+  { to: '/uso', label: "Uso dell'app", short: 'Uso', Icon: Activity, end: false },
+  { to: '/prestazioni', label: 'Prestazioni', short: 'Velocità', Icon: Gauge, end: false },
 ] as const;
 
 /**
- * La cornice del pannello. Su desktop una colonna a sinistra con le tre
+ * La cornice del pannello. Su desktop una colonna a sinistra con le
  * sezioni; su telefono la barra flottante in basso, la stessa dell'app.
  */
 export function AppShell({ admin, onSignOut }: { admin: AdminSession; onSignOut: () => void }) {
@@ -87,8 +90,8 @@ export function AppShell({ admin, onSignOut }: { admin: AdminSession; onSignOut:
         aria-label="Sezioni"
         className="fixed inset-x-0 bottom-0 z-30 px-5 pt-2 pb-[max(14px,env(safe-area-inset-bottom))] lg:hidden"
       >
-        <div className="flex min-h-[60px] overflow-hidden rounded-[24px] border border-ink-700 bg-ink-900/70 shadow-card backdrop-blur-xl">
-          {NAV.map(({ to, label, Icon, end }) => (
+        <div className="flex min-h-[60px] overflow-hidden rounded-[24px] border border-ink-700 bg-ink-900/90 shadow-card backdrop-blur-xl">
+          {NAV.map(({ to, label, short, Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -105,7 +108,7 @@ export function AppShell({ admin, onSignOut }: { admin: AdminSession; onSignOut:
                       isActive ? 'text-tangerine-soft' : 'text-bone/55',
                     )}
                   >
-                    {label}
+                    {short}
                   </span>
                 </>
               )}
