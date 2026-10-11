@@ -15,7 +15,14 @@ import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { ACCOUNTS } from './stack.mjs';
 
 const PORT = Number(process.argv[2] ?? 54321);
-const BASE = `http://127.0.0.1:${PORT}`;
+/**
+ * Negli e2e tutto parla con 127.0.0.1. Nella demo in locale (`npm run demo`)
+ * il telefono lo raggiunge dalla rete: si mette in ascolto su tutte le
+ * interfacce e si presenta con l'indirizzo del computer, perché il backend
+ * accetta solo token il cui emittente è esattamente `SUPABASE_URL/auth/v1`.
+ */
+const HOST = process.env.FAKE_SUPABASE_HOST ?? '127.0.0.1';
+const BASE = process.env.FAKE_SUPABASE_URL ?? `http://127.0.0.1:${PORT}`;
 const ISSUER = `${BASE}/auth/v1`;
 const KID = 'e2e-key';
 const { privateKey, publicKey } = await generateKeyPair('ES256', { extractable: true });
@@ -249,4 +256,4 @@ createServer(async (request, response) => {
   }
 
   send(response, 404, { message: `fake supabase: no route for ${request.method} ${path}` });
-}).listen(PORT, '127.0.0.1', () => console.log(`fake supabase on ${BASE}`));
+}).listen(PORT, HOST, () => console.log(`fake supabase on ${BASE}`));

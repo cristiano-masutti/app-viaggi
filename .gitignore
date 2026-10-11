@@ -55,3 +55,6 @@ coverage/
 
 # Export locali di Expo
 /dist
+
+# npm run demo: i log dei servizi
+.demo/

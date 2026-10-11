@@ -12,6 +12,7 @@
     }
   },
   "scripts": {
+    "demo": "node scripts/demo.mjs",
     "mobile:install": "npm --prefix apps/mobile install",
     "mobile:start": "npm --prefix apps/mobile run start",
     "mobile:ios": "npm --prefix apps/mobile run ios",
