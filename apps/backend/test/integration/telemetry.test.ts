@@ -108,6 +108,24 @@ describe('POST /api/telemetry', () => {
     expect(await prisma.appEvent.count()).toBe(0);
   });
 
+  it('takes panel measurements only from the staff, who own that dashboard', async () => {
+    const { app } = await createTestApp();
+    const traveller = await asUser(app, await createUser());
+    const staff = await asUser(app, await createUser({ isAdmin: true }));
+    const body = {
+      source: 'panel',
+      platform: 'web',
+      samples: [{ metric: 'lcp', target: '/uso', value: 99_000, occurredAt: now() }],
+    };
+
+    const refused = await traveller.post('/api/telemetry', body);
+    expect(refused.statusCode).toBe(403);
+    expect(await prisma.perfSample.count()).toBe(0);
+
+    expect((await staff.post('/api/telemetry', body)).statusCode).toBe(202);
+    expect(await prisma.perfSample.count({ where: { source: 'panel' } })).toBe(1);
+  });
+
   it('needs a signed-in user', async () => {
     const { app } = await createTestApp();
     const response = await app.inject({

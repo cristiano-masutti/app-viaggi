@@ -91,10 +91,21 @@ jobs:
       - name: Build di backend, pannello e app web
         run: npm run build
 
-      # Le immagini che mancano si scrivono (e si committano sotto); quelle che
-      # ci sono si confrontano. A mano, dal workflow_dispatch, si rigenerano tutte.
+      # Quelle che ci sono si confrontano. Una che manca si scrive solo dove poi
+      # si committa (PR di questo repository, lancio a mano); altrove (push su
+      # main, PR da un fork) mancare è un errore, o il confronto salterebbe in
+      # silenzio. A mano, con l'opzione, si rigenerano tutte.
       - name: Test
-        run: npx playwright test --update-snapshots=${{ inputs.update-screenshots && 'all' || 'missing' }}
+        env:
+          UPDATE_ALL: ${{ inputs.update-screenshots == true }}
+          CAN_COMMIT: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+        run: |
+          if [ "$UPDATE_ALL" = true ]; then mode=all
+          elif [ "$CAN_COMMIT" = true ]; then mode=missing
+          else mode=none
+          fi
+          echo "Immagini di riferimento: $mode"
+          npx playwright test --update-snapshots="$mode"
 
       # Solo se tutto è passato: un'immagine di una pagina rotta non diventa il riferimento.
       - name: Committa le immagini di riferimento nuove

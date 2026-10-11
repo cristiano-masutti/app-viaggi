@@ -32,7 +32,9 @@ export const adminMetricsRoutes: FastifyPluginAsyncZod = async (app) => {
       // Gli attivi del mese servono anche se la finestra è più corta.
       const since = coarseFrom(from < addDays(to, -29) ? from : addDays(to, -29));
       const events = `SELECT "userId", name, screen, platform, "tripId", ${LOCAL_DAY('occurredAt')} AS day
-        FROM "AppEvent" WHERE "occurredAt" >= $2`;
+        FROM "AppEvent" WHERE "occurredAt" >= $2
+          -- Lo staff che prova l'app non è uso: il denominatore (people) lo esclude, e così il numeratore.
+          AND "userId" NOT IN (SELECT id FROM "User" WHERE "isAdmin")`;
 
       const [active] = await app.prisma.$queryRawUnsafe<
         Array<{ today: number; week: number; month: number }>
@@ -127,7 +129,12 @@ export const adminMetricsRoutes: FastifyPluginAsyncZod = async (app) => {
       ];
       const documentOpens = await app.prisma.appEvent.groupBy({
         by: ['tripId'],
-        where: { tripId: { in: liveTripIds }, name: 'document_open', occurredAt: { gte: activeSince } },
+        where: {
+          tripId: { in: liveTripIds },
+          name: 'document_open',
+          occurredAt: { gte: activeSince },
+          user: { isAdmin: false },
+        },
         _count: { _all: true },
       });
       const liveTrips = liveTripIds.map((tripId) => {

@@ -38,6 +38,22 @@ function event(
 }
 
 describe('GET /api/admin/usage', () => {
+  it('leaves out the staff trying the app: active people never exceed the people counted', async () => {
+    const { api } = await asAdmin();
+    const [traveller, colleague] = await Promise.all([createUser(), createUser({ isAdmin: true })]);
+    await event(traveller.id, 0);
+    await event(colleague.id, 0, { platform: 'android' });
+    await event(colleague.id, 0, { name: 'screen_view', screen: 'MyTrips' });
+
+    const usage = (await api.get(`/api/admin/usage?days=7&today=${TODAY}`)).json();
+
+    expect(usage.people).toBe(1);
+    expect(usage.activeUsers).toEqual({ today: 1, week: 1, month: 1 });
+    expect(usage.platforms).toEqual([{ platform: 'ios', users: 1 }]);
+    expect(usage.screens).toEqual([]);
+    expect(usage.daily.at(-1)).toMatchObject({ activeUsers: 1, appOpens: 1 });
+  });
+
   it('counts active people today, in 7 and in 30 days, and draws every day of the window', async () => {
     const { api } = await asAdmin();
     const [sofia, luca, aisha] = await Promise.all([createUser(), createUser(), createUser()]);

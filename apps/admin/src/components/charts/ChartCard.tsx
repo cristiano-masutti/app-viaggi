@@ -17,7 +17,7 @@ export function ChartCard({
   table,
   className,
 }: {
-  title: ReactNode;
+  title: string;
   description?: ReactNode;
   controls?: ReactNode;
   chart: ReactNode;
@@ -43,7 +43,19 @@ export function ChartCard({
         </button>
       </div>
       {controls}
-      {asTable ? <div className="max-h-[320px] overflow-auto">{table}</div> : chart}
+      {asTable ? (
+        // La tabella scorre (30 o 90 righe): col focus si scorre anche da tastiera.
+        <div
+          className="max-h-[320px] overflow-auto rounded-[12px]"
+          tabIndex={0}
+          role="region"
+          aria-label={`Tabella: ${title}`}
+        >
+          {table}
+        </div>
+      ) : (
+        chart
+      )}
     </Card>
   );
 }

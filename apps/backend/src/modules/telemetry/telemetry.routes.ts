@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
+import { forbidden } from '../../lib/errors.js';
 import { TelemetryBody, TelemetryResponse } from './telemetry.schemas.js';
 
 const MINUTE = 60_000;
@@ -18,7 +19,7 @@ export function plausibleInstant(occurredAt: Date, now = new Date()): Date {
  * Le metriche dell'app e del pannello, a lotti. Gli eventi d'uso sono legati a
  * chi li manda; un evento su un viaggio conta per quel viaggio solo se chi lo
  * manda è nella crew, così nessuno può gonfiare le metriche di un viaggio altrui.
- * I campioni di prestazioni restano anonimi.
+ * I campioni di prestazioni restano anonimi; quelli del pannello li manda solo lo staff.
  */
 export const telemetryRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
@@ -28,6 +29,13 @@ export const telemetryRoutes: FastifyPluginAsyncZod = async (app) => {
       const { source, platform, appVersion, events, samples } = request.body;
       const userId = request.user.id;
       const now = new Date();
+
+      // Le misure del pannello finiscono nella dashboard dello staff: le manda solo lo staff.
+      // Il ruolo si rilegge dal database, come per /api/admin.
+      if (source === 'panel') {
+        const sender = await app.prisma.user.findUnique({ where: { id: userId }, select: { isAdmin: true } });
+        if (!sender?.isAdmin) throw forbidden('Only the staff sends panel measurements');
+      }
 
       const tripIds = [...new Set(events.flatMap((event) => (event.tripId ? [event.tripId] : [])))];
       const memberOf = new Set(

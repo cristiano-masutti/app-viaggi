@@ -72,9 +72,11 @@ quando passano.
 
 ## Le immagini di riferimento
 
-Sono quelle della CI (Linux, il Chromium di Playwright). Quando ne manca una, la
-CI la genera e la committa sul branch della PR, ma solo se tutti i test
-passano. Dopo un cambiamento voluto all'aspetto:
+Sono quelle della CI (Linux, il Chromium di Playwright). Quando ne manca una in
+una PR di questo repository, la CI la genera e la committa sul branch, ma solo
+se tutti i test passano. Su `main` e nelle PR da un fork un'immagine mancante è
+un errore: il confronto non può saltare in silenzio. Dopo un cambiamento voluto
+all'aspetto:
 
 - cancella le immagini interessate in `tests/__screenshots__/` e fai push: la
   CI le rigenera; oppure

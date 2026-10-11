@@ -72,6 +72,11 @@ describe('UsagePage', () => {
     renderPage();
     await user.click(await screen.findByRole('button', { name: 'Tabella' }));
 
+    // Il contenitore scorre: deve potersi raggiungere da tastiera.
+    expect(screen.getByRole('region', { name: 'Tabella: Giorno per giorno' })).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
     const table = screen.getByRole('table', { name: "Uso dell'app giorno per giorno" });
     const lastDay = within(table).getAllByRole('row').at(-1)!;
     expect(
