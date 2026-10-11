@@ -16,6 +16,52 @@ web) in Chromium contro backend, Postgres e un Supabase finto: flussi
 principali, budget di velocità e fluidità, regole di layout e accessibilità e
 confronto con le immagini di riferimento.
 
+## Demo in locale (app sul telefono + pannello)
+
+Tutto su questo computer, con i dati demo: niente account Supabase, niente
+deploy. Serve:
+
+- Node `^22.13.0 || >=24.3.0` e **Docker Desktop** acceso (per Postgres);
+- **Expo Go** sul telefono (App Store / Play Store), aggiornato;
+- telefono e computer sulla **stessa rete Wi-Fi**.
+
+```bash
+npm run demo             # dati demo da capo, con le date di oggi
+npm run demo -- --keep   # tiene i dati (e le modifiche) della demo precedente
+```
+
+La prima volta installa le dipendenze (qualche minuto). Poi stampa l'indirizzo
+del pannello, gli account e il QR da inquadrare con Expo Go. Ctrl+C chiude
+tutto; Postgres resta acceso (`docker compose -f apps/backend/docker-compose.yml stop`).
+
+| Dove | Chi | Email | Password |
+| --- | --- | --- | --- |
+| Pannello | staff | `giulia@vibemakers.test` | `staff-sicuro-1` |
+| App | coordinatrice | `sofia@example.test` | `viaggio-sicuro-1` |
+| App | viaggiatore | `luca@example.test` | `viaggio-sicuro-1` |
+
+**Cosa mostrare.**
+1. Pannello: *Panoramica* (Islanda e Lisbona in corso), poi *Uso dell'app* (Marco e
+   Omar non sono mai entrati) e *Prestazioni*.
+2. App, come Sofia: il viaggio in Islanda, giorno 3 di 10; Memorie e Organizza.
+3. Insieme: nel pannello aggiungi un alloggio con un PDF a un giorno
+   dell'Islanda; nell'app torna ai viaggi e rientra nell'Islanda: il voucher è
+   lì e si apre. Entro mezzo minuto dall'accesso di Sofia, in *Uso dell'app* →
+   *Aperture* (ricaricando la pagina) il valore di oggi sale.
+
+**Se il telefono non si collega.**
+- macOS chiede di consentire le connessioni in entrata a `node`: consenti.
+- iPhone: Expo Go deve avere il permesso *Rete locale* (Impostazioni → Expo Go).
+- Le reti Wi-Fi ospiti o aziendali spesso isolano i dispositivi: usa l'hotspot
+  del telefono e collega lì il computer.
+- Se l'indirizzo trovato non è quello giusto: `DEMO_HOST=192.168.1.20 npm run demo`.
+- Senza Docker, con un Postgres già pronto:
+  `DEMO_DATABASE_URL=postgresql://…/app_viaggi_demo npm run demo`.
+
+Login e file passano dal Supabase finto degli e2e, con le password qui sopra:
+va bene per una demo su una rete fidata, non per mettere l'app online. Gli
+account creati durante la demo dal pannello spariscono quando la chiudi.
+
 ## Prerequisiti
 
 - Node `^22.13.0 || >=24.3.0` (vedi [.nvmrc](./.nvmrc))
