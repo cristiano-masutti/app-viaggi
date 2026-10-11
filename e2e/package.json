@@ -1,0 +1,28 @@
+{
+  "name": "app-viaggi-e2e",
+  "version": "1.0.0",
+  "description": "Smoke test e controlli visivi di pannello e app, nel browser, contro backend e Postgres veri",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.13.0 || >=24.3.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "playwright test",
+    "test:update": "playwright test --update-snapshots=changed",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^24.19.2",
+    "jose": "^6.2.12",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3"
+  }
+}

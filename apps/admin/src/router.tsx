@@ -31,6 +31,11 @@ export const router = createBrowserRouter([
         path: 'persone/:userId',
         lazy: async () => ({ Component: (await import('@/pages/PersonPage')).PersonPage }),
       },
+      { path: 'uso', lazy: async () => ({ Component: (await import('@/pages/UsagePage')).UsagePage }) },
+      {
+        path: 'prestazioni',
+        lazy: async () => ({ Component: (await import('@/pages/PerformancePage')).PerformancePage }),
+      },
       { path: '*', lazy: async () => ({ Component: (await import('@/pages/NotFoundPage')).NotFoundPage }) },
     ],
   },

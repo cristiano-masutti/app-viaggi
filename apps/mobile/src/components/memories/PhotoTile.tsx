@@ -39,6 +39,7 @@ export function PhotoTile({ memory, author, onPress, onQuickReact }: Props) {
         onQuickReact(REACTIONS[0]);
       }}
       delayLongPress={320}
+      accessibilityRole="button"
       accessibilityLabel={`Ricordo di ${author?.name ?? 'crew'}, ${memory.time}`}
       style={{ aspectRatio: memory.aspectRatio }}
       className="w-full overflow-hidden rounded-[18px] border border-ink-700 bg-ink-800"

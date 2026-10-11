@@ -48,7 +48,7 @@ export function FormField({
   return (
     <View className={`gap-1.5 ${className ?? ''}`}>
       {label ? (
-        <Text className="text-[11px] font-extrabold uppercase tracking-[0.9px] text-bone/45">{label}</Text>
+        <Text className="text-[11px] font-extrabold uppercase tracking-[0.9px] text-bone/60">{label}</Text>
       ) : null}
 
       <View
@@ -77,7 +77,7 @@ export function FormField({
       </View>
 
       {counter && maxLength ? (
-        <Text className="self-end text-[11px] font-bold text-bone/40">{`${value.length}/${maxLength}`}</Text>
+        <Text className="self-end text-[11px] font-bold text-bone/60">{`${value.length}/${maxLength}`}</Text>
       ) : null}
     </View>
   );

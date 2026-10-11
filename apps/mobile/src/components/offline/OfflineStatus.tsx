@@ -101,6 +101,7 @@ export function TripOfflineStrip({ trip }: { trip: Trip }) {
               haptics.tap();
               status.retryFailed();
             }}
+            accessibilityRole="button"
             accessibilityLabel="Riprova il salvataggio offline"
             className="h-9 flex-row items-center gap-1.5 rounded-xl border border-ink-700 bg-ink-850 px-3"
           >

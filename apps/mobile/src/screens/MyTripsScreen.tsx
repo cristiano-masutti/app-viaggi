@@ -10,6 +10,7 @@ import { DashedPlaceholder } from '@/components/ui/DashedPlaceholder';
 import { HeaderIconButton, ScreenHeader } from '@/components/ui/ScreenHeader';
 import { TripCardSkeleton } from '@/components/ui/Skeleton';
 import { useHeaderScroll } from '@/lib/useHeaderScroll';
+import { useScreenReady } from '@/telemetry/useScreenReady';
 import { HUB_SUBTITLES } from '@/lib/trip';
 import { TAB_BAR_SPACE } from '@/navigation/FloatingTabBar';
 import type { MainTabScreenProps } from '@/navigation/types';
@@ -45,6 +46,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
     return () => clearTimeout(timer);
   }, [remote]);
   const booting = remote ? tripsStatus === 'idle' || tripsStatus === 'loading' : mockBooting;
+  useScreenReady('MyTrips', !booting);
 
   // Al ritorno sull'hub (da un viaggio, dal profilo) le card si riallineano al
   // server: nuovi compagni, ricordi degli altri. Il primo ingresso no, lo fa il login.
@@ -90,6 +92,7 @@ export function MyTripsScreen({ navigation }: MainTabScreenProps<'MyTrips'>) {
         onHeight={setHeaderHeight}
         right={
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Notifiche"
             onPress={() => {
               /* TODO: centro notifiche */
@@ -167,7 +170,10 @@ function TripsStatusTabs({
   ];
 
   return (
-    <View className="h-[54px] flex-row overflow-hidden rounded-control border border-ink-700 bg-ink-900">
+    <View
+      accessibilityRole="tablist"
+      className="h-[54px] flex-row overflow-hidden rounded-control border border-ink-700 bg-ink-900"
+    >
       {items.map((item) => {
         const active = value === item.key;
 
@@ -210,6 +216,7 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
       </Text>
       <Pressable
         onPress={onRetry}
+        accessibilityRole="button"
         accessibilityLabel="Riprova a caricare i viaggi"
         className="mt-1 h-[42px] items-center justify-center rounded-[14px] bg-tangerine px-5"
       >

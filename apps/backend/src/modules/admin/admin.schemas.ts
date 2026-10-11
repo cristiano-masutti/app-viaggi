@@ -1,10 +1,17 @@
 import { z } from 'zod';
 
-import { TransportMode, TripRole } from '../../generated/prisma/enums.js';
+import {
+  AppPlatform,
+  PerfMetric,
+  TelemetrySource,
+  TransportMode,
+  TripRole,
+} from '../../generated/prisma/enums.js';
 import { isoDate, isoDateTime } from '../../lib/schemas.js';
 import { InvitationDto } from '../crew/crew.schemas.js';
 import { TRIP_STATUSES } from '../trips/trip-status.js';
 import { CrewCapacity, Destination, Title, validDates } from '../trips/trips.schemas.js';
+import { isTimeZone } from './metrics.js';
 import { READINESS_ISSUES } from './readiness.js';
 
 /**
@@ -79,6 +86,8 @@ export const AdminMemberDto = PersonRef.extend({
   role: z.enum(TripRole),
   joinedAt: isoDateTime,
   passport: PassportStatus,
+  /** L'ultima volta che ha usato l'app; `null` se non ci è mai entrato. */
+  lastSeenAt: isoDateTime.nullable(),
 });
 
 export const AdminTripDetailDto = AdminTripSummaryDto.extend({
@@ -119,9 +128,17 @@ export const AdminUserDto = z.object({
   createdAt: isoDateTime,
   tripCount: z.number().int(),
   passport: PassportStatus,
+  /** L'ultima volta che ha usato l'app; `null` se non ci è mai entrato. */
+  lastSeenAt: isoDateTime.nullable(),
 });
 
 export const AdminUserDetailDto = AdminUserDto.extend({
+  /** Gli ultimi 30 giorni nell'app. */
+  usage: z.object({
+    appOpens: z.number().int(),
+    screenViews: z.number().int(),
+    documentOpens: z.number().int(),
+  }),
   trips: z.array(
     z.object({
       tripId: z.uuid(),
@@ -190,3 +207,90 @@ export const AdminCreateTripBody = validDates(
     coordinatorUserId: z.uuid(),
   }),
 );
+
+/* ── Metriche ─────────────────────────────────────────────────────────── */
+
+const TimeZone = z
+  .string()
+  .max(64)
+  .refine(isTimeZone, 'Unknown time zone')
+  .default('UTC')
+  .meta({ description: 'Fuso di chi guarda: i giorni delle serie sono i suoi (es. Europe/Rome).' });
+
+export const AdminMetricsQuery = z.object({
+  days: z.coerce.number().int().min(7).max(90).default(30),
+  today: isoDate.optional(),
+  tz: TimeZone,
+});
+
+export const AdminPerformanceQuery = AdminMetricsQuery.extend({
+  source: z.enum(TelemetrySource).default('app'),
+});
+
+const PersonLastSeen = z.object({
+  userId: z.uuid(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().nullable(),
+  /** `null` = non è mai entrato nell'app. */
+  lastSeenAt: isoDateTime.nullable(),
+  /** Il suo prossimo viaggio (o quello in corso). */
+  trip: z.object({ tripId: z.uuid(), title: z.string(), startDate: isoDate }),
+});
+
+export const AdminUsageDto = z.object({
+  from: isoDate,
+  to: isoDate,
+  activeUsers: z.object({ today: z.number().int(), week: z.number().int(), month: z.number().int() }),
+  /** Persone con un account, staff escluso: il denominatore degli attivi. */
+  people: z.number().int(),
+  daily: z.array(
+    z.object({
+      day: isoDate,
+      activeUsers: z.number().int(),
+      appOpens: z.number().int(),
+      documentOpens: z.number().int(),
+    }),
+  ),
+  screens: z.array(z.object({ screen: z.string(), views: z.number().int(), users: z.number().int() })),
+  platforms: z.array(z.object({ platform: z.enum(AppPlatform), users: z.number().int() })),
+  /** Chi è in un viaggio in corso o futuro ma non apre l'app da 14 giorni, o mai. */
+  inactive: z.object({ total: z.number().int(), people: z.array(PersonLastSeen) }),
+  /** Viaggi in corso: quanti della crew hanno usato l'app negli ultimi 7 giorni. */
+  liveTrips: z.array(
+    z.object({
+      tripId: z.uuid(),
+      title: z.string(),
+      members: z.number().int(),
+      activeMembers: z.number().int(),
+      documentOpens: z.number().int(),
+    }),
+  ),
+});
+
+const Percentiles = {
+  count: z.number().int(),
+  p50: z.number(),
+  p75: z.number(),
+  p95: z.number(),
+};
+
+export const AdminPerformanceDto = z.object({
+  source: z.enum(TelemetrySource),
+  from: isoDate,
+  to: isoDate,
+  metrics: z.array(z.object({ metric: z.enum(PerfMetric), ...Percentiles })),
+  daily: z.array(
+    z.object({ day: isoDate, metric: z.enum(PerfMetric), p75: z.number(), count: z.number().int() }),
+  ),
+  /** Per schermata, pagina o chiamata: dove si perde tempo. */
+  targets: z.array(z.object({ metric: z.enum(PerfMetric), target: z.string(), ...Percentiles })),
+  platforms: z.array(
+    z.object({
+      platform: z.enum(AppPlatform),
+      metric: z.enum(PerfMetric),
+      p75: z.number(),
+      count: z.number().int(),
+    }),
+  ),
+});

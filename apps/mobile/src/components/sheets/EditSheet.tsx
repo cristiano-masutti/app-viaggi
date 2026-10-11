@@ -143,6 +143,7 @@ export function EditSheet({
             haptics.tap();
             onClose();
           }}
+          accessibilityRole="button"
           accessibilityLabel="Chiudi"
           className="h-[38px] w-[38px] items-center justify-center rounded-[13px] border border-ink-700 bg-ink-850"
         >
@@ -156,7 +157,7 @@ export function EditSheet({
       >
         {fields.map((field) => (
           <View key={field.key} className="gap-1.5 rounded-[16px] border border-ink-700 bg-ink-850 px-4 py-3">
-            <Text className="text-[10.5px] font-bold uppercase tracking-[0.8px] text-bone/45">
+            <Text className="text-[10.5px] font-bold uppercase tracking-[0.8px] text-bone/60">
               {field.label}
             </Text>
             <BottomSheetTextInput
@@ -182,7 +183,7 @@ export function EditSheet({
 
         {attachment ? (
           <View className="gap-2 rounded-[16px] border border-ink-700 bg-ink-850 px-4 py-3.5">
-            <Text className="text-[10.5px] font-bold uppercase tracking-[0.8px] text-bone/45">
+            <Text className="text-[10.5px] font-bold uppercase tracking-[0.8px] text-bone/60">
               {attachment.label}
             </Text>
             {doc ? (
@@ -192,6 +193,7 @@ export function EditSheet({
                   {doc.subtitle}
                 </Text>
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Rimuovi allegato"
                   onPress={() => {
                     haptics.warn();

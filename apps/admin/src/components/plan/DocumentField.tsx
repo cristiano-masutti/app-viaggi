@@ -40,7 +40,7 @@ export function DocumentField({
 
   return (
     <div className="flex flex-col gap-2 rounded-[16px] border border-ink-700 bg-ink-850 px-4 py-3.5">
-      <span className="text-[10.5px] font-bold tracking-[0.8px] text-bone/45 uppercase">{label}</span>
+      <span className="text-[10.5px] font-bold tracking-[0.8px] text-bone/60 uppercase">{label}</span>
       {shown ? (
         <div className="flex items-center gap-2.5">
           <FileText size={16} strokeWidth={2} className="shrink-0 text-tangerine-soft" />

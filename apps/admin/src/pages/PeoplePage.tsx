@@ -7,6 +7,7 @@ import { PAGE_SIZE, useCreateAccount, useUsers } from '@/api/queries';
 import type { AdminUser, CreatedAccount } from '@/api/types';
 import { PageBody, PageHeader } from '@/components/layout/PageHeader';
 import { SlotForm } from '@/components/plan/SlotForm';
+import { LastSeen } from '@/components/people/LastSeen';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -128,6 +129,8 @@ function PersonRow({ person }: { person: AdminUser }) {
         </span>
         <span className="text-bone/30">·</span>
         <span>dal {dayOf(person.createdAt)}</span>
+        <span className="text-bone/30">·</span>
+        <LastSeen lastSeenAt={person.lastSeenAt} />
       </span>
       <span>
         {person.passport.present ? (

@@ -15,6 +15,7 @@ import type {
 } from '@/api/types';
 import { AddMemberDialog, InvitationsDialog, MemberDialog } from '@/components/crew/CrewDialogs';
 import { PageBody, PageHeader } from '@/components/layout/PageHeader';
+import { LastSeen } from '@/components/people/LastSeen';
 import { DocumentChip } from '@/components/plan/DocumentField';
 import {
   ActivityDialog,
@@ -130,7 +131,7 @@ export function TripDetailPage() {
       </PageHeader>
 
       <PageBody>
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
           <div className="flex min-w-0 flex-col gap-8">
             {tab === 'organize' ? (
               plan.isError ? (
@@ -208,7 +209,7 @@ function TripDetailSkeleton() {
     <>
       <PageHeader leading={<BackButton />} title={<Skeleton className="h-8 w-72 rounded-lg" />} />
       <PageBody>
-        <div className="grid gap-8 lg:grid-cols-[1fr_330px]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_330px]">
           <div className="flex flex-col gap-3.5">
             <Skeleton className="h-[52px] w-[420px] max-w-full rounded-control" />
             <Skeleton className="h-[160px] rounded-card" />
@@ -274,7 +275,7 @@ function Organize({
         <SectionLabel hint="Validi per tutte le tappe">
           <span id="trip-docs">Documenti del viaggio</span>
         </SectionLabel>
-        <div className="grid gap-3.5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
           <SlotCard
             emoji="🛡️"
             title="Assicurazione"
@@ -507,7 +508,7 @@ function DayCard({
           {today ? ' · Oggi' : ''}
         </span>
         <span className="text-[13px] font-bold text-mist">{shortDate(day.date)}</span>
-        {last ? <span className="ml-auto text-[12px] font-bold text-bone/40">Giorno del rientro</span> : null}
+        {last ? <span className="ml-auto text-[12px] font-bold text-mist">Giorno del rientro</span> : null}
       </div>
 
       {day.stay ? (
@@ -621,6 +622,7 @@ function Crew({ trip, onSheet }: { trip: AdminTripDetail; onSheet: (sheet: Sheet
                   <span className="block truncate text-[12.5px] font-semibold text-mist">
                     {ROLE_LABELS[member.role]} · {member.email ?? 'senza email'}
                   </span>
+                  <LastSeen lastSeenAt={member.lastSeenAt} className="mt-0.5 block text-[12px]" />
                 </span>
                 <span className="hidden sm:block">
                   <PassportChip passport={member.passport} />

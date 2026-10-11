@@ -9,6 +9,7 @@ import {
 import { AppError, notFound } from '../../lib/errors.js';
 import { tripStatus, utcToday } from '../trips/trip-status.js';
 import { passportStatus, searchWhere } from './admin-trips.js';
+import { lastSeenByUser } from './metrics.js';
 import {
   AdminUserDetailDto,
   AdminUserDto,
@@ -32,26 +33,30 @@ const userSelect = {
   _count: { select: { memberships: true } },
 } as const;
 
-const toAdminUser = ({
-  passportNumber,
-  passportExpiry,
-  _count,
-  ...user
-}: {
-  id: string;
-  email: string | null;
-  firstName: string;
-  lastName: string;
-  username: string | null;
-  isAdmin: boolean;
-  createdAt: Date;
-  passportNumber: string | null;
-  passportExpiry: string | null;
-  _count: { memberships: number };
-}) => ({
+const toAdminUser = (
+  {
+    passportNumber,
+    passportExpiry,
+    _count,
+    ...user
+  }: {
+    id: string;
+    email: string | null;
+    firstName: string;
+    lastName: string;
+    username: string | null;
+    isAdmin: boolean;
+    createdAt: Date;
+    passportNumber: string | null;
+    passportExpiry: string | null;
+    _count: { memberships: number };
+  },
+  lastSeen: Map<string, Date> = new Map(),
+) => ({
   ...user,
   tripCount: _count.memberships,
   passport: passportStatus({ passportNumber, passportExpiry }),
+  lastSeenAt: lastSeen.get(user.id) ?? null,
 });
 
 const emailTaken = () => new AppError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
@@ -81,7 +86,11 @@ export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
         app.prisma.user.count({ where }),
       ]);
 
-      return { users: users.map(toAdminUser), total };
+      const lastSeen = await lastSeenByUser(
+        app.prisma,
+        users.map((user) => user.id),
+      );
+      return { users: users.map((user) => toAdminUser(user, lastSeen)), total };
     },
   );
 
@@ -113,9 +122,23 @@ export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!user) throw notFound('User');
 
       const { memberships, ...rest } = user;
+      const [lastSeen, usage] = await Promise.all([
+        lastSeenByUser(app.prisma, [user.id]),
+        app.prisma.appEvent.groupBy({
+          by: ['name'],
+          where: { userId: user.id, occurredAt: { gte: new Date(Date.now() - 30 * 86_400_000) } },
+          _count: { _all: true },
+        }),
+      ]);
+      const count = (name: string) => usage.find((row) => row.name === name)?._count._all ?? 0;
       return {
         user: {
-          ...toAdminUser(rest),
+          ...toAdminUser(rest, lastSeen),
+          usage: {
+            appOpens: count('app_open'),
+            screenViews: count('screen_view'),
+            documentOpens: count('document_open'),
+          },
           trips: memberships.map(({ role, joinedAt, trip }) => ({
             tripId: trip.id,
             title: trip.title,

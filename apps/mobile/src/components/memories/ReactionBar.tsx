@@ -33,6 +33,7 @@ export function ReactionBar({ memory, onToggle, variant = 'full' }: Props) {
         return (
           <Pressable
             key={reaction}
+            accessibilityRole="button"
             accessibilityLabel={`Reagisci con ${reaction}`}
             accessibilityState={{ selected: mine }}
             onPress={() => {

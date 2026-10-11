@@ -55,7 +55,7 @@ export function TripRow({ trip, today }: { trip: AdminTripSummary; today: string
 
 export function TripRowSkeleton() {
   return (
-    <div className="grid gap-4 rounded-card border border-ink-700 bg-ink-900 p-5 md:grid-cols-[1.6fr_1fr]">
+    <div className="grid grid-cols-1 gap-4 rounded-card border border-ink-700 bg-ink-900 p-5 md:grid-cols-[1.6fr_1fr]">
       <div className="flex flex-col gap-2.5">
         <Skeleton className="h-[26px] w-40 rounded-chip" />
         <Skeleton className="h-5 w-3/4 rounded-lg" />

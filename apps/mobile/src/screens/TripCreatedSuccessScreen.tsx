@@ -115,7 +115,7 @@ export function TripCreatedSuccessScreen({ navigation, route }: RootStackScreenP
 
           {/* Invito */}
           <Animated.View entering={FadeInUp.delay(200).duration(420)} className="gap-3">
-            <Text className="text-[11px] font-extrabold uppercase tracking-[1.2px] text-bone/45">
+            <Text className="text-[11px] font-extrabold uppercase tracking-[1.2px] text-bone/60">
               Link di invito della crew
             </Text>
             <View className="gap-3 rounded-card border border-ink-700 bg-ink-900 p-4">

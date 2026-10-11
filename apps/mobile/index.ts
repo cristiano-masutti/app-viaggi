@@ -1,3 +1,6 @@
+// Per primo: l'istante di questo import è l'inizio del tempo di avvio misurato.
+import './src/telemetry';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';

@@ -95,6 +95,7 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
             haptics.tap();
             onClose();
           }}
+          accessibilityRole="button"
           accessibilityLabel="Chiudi"
           className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-ink-700 bg-ink-900"
         >
@@ -163,6 +164,7 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
                 onPress={() => {
                   void pickMedia();
                 }}
+                accessibilityRole="button"
                 accessibilityLabel="Carica dalla galleria"
                 className="h-[200px] items-center justify-center gap-2.5 overflow-hidden rounded-card border border-dashed border-tangerine/55 bg-tangerine/10"
               >
@@ -174,7 +176,7 @@ export function NewMemoryModal({ visible, trip, defaultDayId, onClose, onSave }:
                     <Text className="text-[14.5px] font-extrabold tracking-tight text-tangerine">
                       Carica dalla galleria
                     </Text>
-                    <Text className="text-[12px] font-semibold text-bone/45">
+                    <Text className="text-[12px] font-semibold text-bone/60">
                       {`Verrà associato a ${dayId}`}
                     </Text>
                   </>
@@ -252,7 +254,7 @@ function StepLabel({ step, text }: { step: number; text: string }) {
       <View className="h-[18px] w-[18px] items-center justify-center rounded-full bg-tangerine/20">
         <Text className="text-[10.5px] font-extrabold text-tangerine-soft">{step}</Text>
       </View>
-      <Text className="text-[12.5px] font-extrabold tracking-tight text-bone/50">{text}</Text>
+      <Text className="text-[12.5px] font-extrabold tracking-tight text-bone/60">{text}</Text>
     </View>
   );
 }
@@ -270,6 +272,7 @@ function FormatCard({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
       onPress={onPress}
@@ -298,6 +301,7 @@ function VisibilityOption({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
       onPress={onPress}

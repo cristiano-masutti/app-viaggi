@@ -140,7 +140,7 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, scrollRef, onEdit
         )}
 
         {/* Attività prenotate */}
-        <Text className="pl-0.5 text-[11px] font-extrabold uppercase tracking-[0.9px] text-bone/45">
+        <Text className="pl-0.5 text-[11px] font-extrabold uppercase tracking-[0.9px] text-bone/60">
           Attività prenotate
         </Text>
 
@@ -253,7 +253,7 @@ export function OrganizeTab({ trip, topPadding, bottomPadding, scrollRef, onEdit
         )}
 
         {/* Trasporti di gruppo */}
-        <Text className="pl-0.5 text-[11px] font-extrabold uppercase tracking-[0.9px] text-bone/45">
+        <Text className="pl-0.5 text-[11px] font-extrabold uppercase tracking-[0.9px] text-bone/60">
           Trasporti di gruppo
         </Text>
 

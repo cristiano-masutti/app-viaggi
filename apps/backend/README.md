@@ -302,7 +302,46 @@ Le route del viaggio iniziano tutte con `/api/trips/:tripId` (qui `…`).
 | `GET` | `/api/admin/trips/:id` | S | crew con contatti, programma, logistica, numero dei ricordi |
 | `POST` `PATCH` `DELETE` | `/api/admin/trips/:id/members(/:userId)` | S | aggiungi (rispettando i posti), ruolo, rimozione |
 | `GET` `POST` | `/api/admin/users` | S | persone (`?q=`); nuovo account Supabase con password provvisoria, restituita una volta |
-| `GET` | `/api/admin/users/:id` | S | viaggi e stato del passaporto; mai note mediche, codice fiscale o numero |
+| `GET` | `/api/admin/users/:id` | S | viaggi, stato del passaporto, ultimo accesso e uso degli ultimi 30 giorni; mai note mediche, codice fiscale o numero |
+| `POST` | `/api/telemetry` | utente | lotti di eventi d'uso (solo l'app) e misure di prestazioni (app e pannello); risponde `202` |
+| `GET` | `/api/admin/usage` | S | attivi oggi/7/30 giorni, andamento, schermate, dispositivi, chi non entra (`?days=&tz=&today=`) |
+| `GET` | `/api/admin/performance` | S | p50/p75/p95 per misura, p75 giorno per giorno, per schermata/chiamata e dispositivo (`?source=app\|panel`) |
+
+## Metriche d'uso e prestazioni
+
+App e pannello mandano a lotti a `POST /api/telemetry` (vedi
+[`telemetry.schemas.ts`](./src/modules/telemetry/telemetry.schemas.ts)):
+
+- **Eventi d'uso** (`AppEvent`, solo dall'app): `app_open`, `screen_view` con il
+  nome della schermata, `document_open`. Sono legati alla persona e, se ne fa
+  parte, al viaggio: servono a "chi non è mai entrato" e all'ultimo accesso.
+- **Prestazioni** (`PerfSample`, anonime): avvio, schermata pronta, latenza per
+  chiamata (`GET /api/trips/{tripId}`, mai con gli id), fotogrammi lenti e
+  blocchi dall'app; LCP, INP, CLS, TTFB e latenza dal pannello.
+
+Niente contenuti: nomi di schermate e di chiamate, durate, istanti. Il backend
+riporta gli istanti in un intervallo plausibile (30 giorni indietro, 5 minuti
+avanti), scarta il `tripId` di chi non è nella crew e rifiuta eventi d'uso dal
+pannello. Le aggregazioni (`percentile_cont`, giorni nel fuso di chi guarda)
+sono in [`admin-metrics.routes.ts`](./src/modules/admin/admin-metrics.routes.ts).
+
+```bash
+npm run telemetry:prune        # tiene gli ultimi 180 giorni (cron giornaliero)
+npm run telemetry:prune -- 90  # tiene gli ultimi 90 (minimo 7)
+```
+
+## Dati demo
+
+```bash
+DATABASE_URL=postgresql://…/app_viaggi_demo npm run seed:demo
+DEMO_NOW=2027-09-14T10:00:00Z npm run seed:demo   # sempre gli stessi dati
+```
+
+Svuota il database e scrive 13 persone, 7 viaggi (in corso, futuri, passati) e
+cinque settimane di uso e prestazioni, generate in modo deterministico
+([`scripts/demo.ts`](./scripts/demo.ts)). **Parte solo su un database con
+`demo` o `e2e` nel nome.** Gli smoke test in [`e2e/`](../../e2e) lo usano a ogni
+giro. I documenti puntano a file che solo lo storage finto degli e2e genera.
 
 ## Variabili d'ambiente
 

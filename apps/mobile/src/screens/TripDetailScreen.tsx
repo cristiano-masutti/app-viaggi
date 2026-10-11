@@ -16,6 +16,8 @@ import { DocumentViewerModal } from '@/components/viewers/DocumentViewerModal';
 import { PhotoViewerModal } from '@/components/viewers/PhotoViewerModal';
 import { defaultDayId, photoMemories, tripBadge } from '@/lib/trip';
 import { useHeaderScroll } from '@/lib/useHeaderScroll';
+import { telemetry } from '@/telemetry';
+import { useScreenReady } from '@/telemetry/useScreenReady';
 import type { RootStackScreenProps } from '@/navigation/types';
 import { useAppActions, useProfile, useTrip, useTripLoaded } from '@/store/AppStore';
 import { palette } from '@/theme/palette';
@@ -39,6 +41,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
   const { tripId } = route.params;
   const trip = useTrip(tripId);
   const loaded = useTripLoaded(tripId);
+  useScreenReady('TripDetail', !!trip && loaded);
   const profile = useProfile();
   const actions = useAppActions();
   const toast = useToast();
@@ -239,6 +242,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
         <View className="flex-row gap-3">
           <Pressable
             onPress={() => navigation.goBack()}
+            accessibilityRole="button"
             accessibilityLabel="Torna ai miei viaggi"
             className="h-[42px] items-center justify-center rounded-[14px] border border-ink-700 bg-ink-900 px-4"
           >
@@ -246,6 +250,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
           </Pressable>
           <Pressable
             onPress={() => setLoadAttempt((attempt) => attempt + 1)}
+            accessibilityRole="button"
             accessibilityLabel="Riprova a caricare il viaggio"
             className="h-[42px] items-center justify-center rounded-[14px] bg-tangerine px-5"
           >
@@ -272,6 +277,7 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
         left={
           <Pressable
             onPress={() => navigation.goBack()}
+            accessibilityRole="button"
             accessibilityLabel="Torna ai miei viaggi"
           >
             <HeaderIconButton>
@@ -303,7 +309,10 @@ export function TripDetailScreen({ navigation, route }: RootStackScreenProps<'Tr
           bottomPadding={bottomPadding}
           scrollRef={activeScroll.scrollRef}
           onEdit={setEditing}
-          onOpenDoc={setViewerDoc}
+          onOpenDoc={(doc) => {
+            telemetry.event('document_open', { tripId });
+            setViewerDoc(doc);
+          }}
         />
       )}
 
@@ -386,7 +395,7 @@ function TripDetailSkeleton({ title, onBack }: { title?: string; onBack: () => v
   return (
     <View className="flex-1 bg-ink-950" style={{ paddingTop: insets.top + 8 }}>
       <View className="flex-row items-center gap-3 px-5 pb-4">
-        <Pressable onPress={onBack} accessibilityLabel="Torna ai miei viaggi">
+        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Torna ai miei viaggi">
           <HeaderIconButton>
             <ArrowLeft size={19} color={palette.text} strokeWidth={2.2} />
           </HeaderIconButton>

@@ -48,3 +48,14 @@ export const longDate = (iso: string) => `${shortDate(iso)} ${parts(iso).year}`;
 
 /** Da un istante ISO (createdAt, joinedAt) al giorno: '3 Ott 2027'. */
 export const dayOf = (instant: string) => longDate(todayISO(new Date(instant)));
+
+/** '2027-09-14' + 3 → '2027-09-17'. */
+export function addDaysISO(iso: string, days: number): string {
+  return new Date(toUtc(iso) + days * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
+/** Ogni giorno da `from` a `to`, estremi compresi. */
+export function eachDayISO(from: string, to: string): string[] {
+  const length = Math.max(0, daysBetween(from, to) + 1);
+  return Array.from({ length }, (_, offset) => addDaysISO(from, offset));
+}

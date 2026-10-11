@@ -60,7 +60,7 @@ export function OverviewPage() {
               hint="Quando una crew parte, il viaggio compare qui con il giorno a cui è arrivata."
             />
           ) : (
-            <div className="grid gap-3.5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
               {ongoing.data.trips.map((trip) => (
                 <LiveCard key={trip.id} trip={trip} today={today} />
               ))}
@@ -68,7 +68,7 @@ export function OverviewPage() {
           )}
         </section>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <section className="flex flex-col gap-3.5" aria-labelledby="departures">
             <SectionLabel hint="prossimi 60 giorni">
               <span id="departures">Prossime partenze</span>

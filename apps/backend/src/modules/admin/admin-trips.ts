@@ -3,6 +3,7 @@ import type { TripRole } from '../../generated/prisma/enums.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { countDays, dayDate } from '../trips/days.js';
 import { tripStatus } from '../trips/trip-status.js';
+import { lastSeenByUser } from './metrics.js';
 import { assessReadiness } from './readiness.js';
 
 /**
@@ -108,19 +109,22 @@ export const memberRowSelect = {
   },
 } as const;
 
-export const toAdminMember = (member: {
-  userId: string;
-  role: TripRole;
-  joinedAt: Date;
-  user: {
-    firstName: string;
-    lastName: string;
-    username: string | null;
-    email: string | null;
-    passportNumber: string | null;
-    passportExpiry: string | null;
-  };
-}) => ({
+export const toAdminMember = (
+  member: {
+    userId: string;
+    role: TripRole;
+    joinedAt: Date;
+    user: {
+      firstName: string;
+      lastName: string;
+      username: string | null;
+      email: string | null;
+      passportNumber: string | null;
+      passportExpiry: string | null;
+    };
+  },
+  lastSeen: Map<string, Date> = new Map(),
+) => ({
   userId: member.userId,
   firstName: member.user.firstName,
   lastName: member.user.lastName,
@@ -129,6 +133,7 @@ export const toAdminMember = (member: {
   role: member.role,
   joinedAt: member.joinedAt,
   passport: passportStatus(member.user),
+  lastSeenAt: lastSeen.get(member.userId) ?? null,
 });
 
 /**
@@ -160,6 +165,10 @@ export async function loadAdminTripDetail(prisma: PrismaClient, tripId: string, 
   if (!trip) return null;
 
   const summary = toAdminTripSummary(trip, today);
+  const lastSeen = await lastSeenByUser(
+    prisma,
+    trip.members.map((member) => member.userId),
+  );
   const staysByDay = new Map(trip.stays.map((stay) => [stay.dayIndex, stay]));
   const memories = (kind: string) => memoriesByKind.find((row) => row.kind === kind)?._count._all ?? 0;
 
@@ -167,7 +176,7 @@ export async function loadAdminTripDetail(prisma: PrismaClient, tripId: string, 
     ...summary,
     inviteCode: trip.inviteCode,
     createdAt: trip.createdAt,
-    crew: trip.members.map(toAdminMember),
+    crew: trip.members.map((member) => toAdminMember(member, lastSeen)),
     invitations: trip.invitations,
     days: Array.from({ length: summary.totalDays }, (_, offset) => {
       const index = offset + 1;

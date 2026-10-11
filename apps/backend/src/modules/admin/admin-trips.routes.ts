@@ -7,6 +7,7 @@ import { addMember, assertNotLastCoordinator } from '../crew/membership.js';
 import { generateInviteCode } from '../trips/invite-code.js';
 import { lockTrip } from '../trips/trip-lock.js';
 import { tripStatusWhere, utcToday } from '../trips/trip-status.js';
+import { lastSeenByUser } from './metrics.js';
 import {
   adminTripInclude,
   loadAdminTripDetail,
@@ -158,7 +159,9 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       request.log.info({ adminId: request.user.id, tripId, userId, role }, 'Admin added a trip member');
-      return reply.status(201).send({ member: toAdminMember(member) });
+      return reply
+        .status(201)
+        .send({ member: toAdminMember(member, await lastSeenByUser(app.prisma, [userId])) });
     },
   );
 
@@ -189,7 +192,7 @@ export const adminTripsRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       request.log.info({ adminId: request.user.id, tripId, userId, role }, 'Admin changed a member role');
-      return { member: toAdminMember(member) };
+      return { member: toAdminMember(member, await lastSeenByUser(app.prisma, [userId])) };
     },
   );
 

@@ -20,7 +20,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
   return (
     <label htmlFor={inputId} className={cn('flex flex-col gap-1.5', className)}>
       {label ? (
-        <span className="text-[10.5px] font-bold tracking-[0.8px] text-bone/45 uppercase">{label}</span>
+        <span className="text-[10.5px] font-bold tracking-[0.8px] text-bone/60 uppercase">{label}</span>
       ) : null}
       <span
         className={cn(

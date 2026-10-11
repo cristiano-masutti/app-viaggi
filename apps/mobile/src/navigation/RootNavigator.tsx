@@ -1,4 +1,9 @@
-import { DarkTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import {
+  DarkTheme,
+  NavigationContainer,
+  type Theme,
+  useNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
@@ -7,6 +12,7 @@ import { CreateTripScreen } from '@/screens/CreateTripScreen';
 import { LoginScreen } from '@/screens/LoginScreen';
 import { TripCreatedSuccessScreen } from '@/screens/TripCreatedSuccessScreen';
 import { TripDetailScreen } from '@/screens/TripDetailScreen';
+import { currentScreen, telemetry } from '@/telemetry';
 import { palette } from '@/theme/palette';
 
 import { MainTabs } from './MainTabs';
@@ -36,9 +42,26 @@ const navigationTheme: Theme = {
  */
 export function RootNavigator() {
   const { authenticated } = useAppState();
+  const navigation = useNavigationContainerRef<RootStackParamList>();
+
+  /** Ogni cambio di schermata è una visita: nome della schermata e, se c'è, il viaggio. */
+  const trackScreen = () => {
+    const route = navigation.getCurrentRoute();
+    if (!route || route.name === currentScreen.name) return;
+    currentScreen.name = route.name;
+    // Il login non è uso dell'app: l'evento verrebbe attribuito a chi entra dopo.
+    if (!authenticated) return;
+    const params = route.params as { tripId?: string } | undefined;
+    telemetry.event('screen_view', { screen: route.name, tripId: params?.tripId });
+  };
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer
+      theme={navigationTheme}
+      ref={navigation}
+      onReady={trackScreen}
+      onStateChange={trackScreen}
+    >
       <Stack.Navigator
         screenOptions={{
           headerShown: false,

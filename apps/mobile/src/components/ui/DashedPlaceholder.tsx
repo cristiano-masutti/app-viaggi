@@ -32,6 +32,7 @@ export function DashedPlaceholder({ emoji, title, hint, onPress, variant = 'bloc
           haptics.tap();
           onPress();
         }}
+        accessibilityRole="button"
         accessibilityLabel={title}
         className={`h-[50px] w-full flex-row items-center justify-center gap-2 rounded-[17px] border border-dashed border-tangerine/45 bg-tangerine/10 ${
           className ?? ''
@@ -51,6 +52,7 @@ export function DashedPlaceholder({ emoji, title, hint, onPress, variant = 'bloc
         haptics.tap();
         onPress();
       }}
+      accessibilityRole="button"
       accessibilityLabel={title}
       className={`items-center justify-center gap-2 rounded-card border-2 border-dashed border-ink-700 bg-ink-900/50 px-5 py-6 ${
         className ?? ''

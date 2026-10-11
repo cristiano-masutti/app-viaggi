@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthError, useAuth } from '@/auth/AuthProvider';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useAppActions } from '@/store/AppStore';
+import { markAppReady } from '@/telemetry';
 import { palette } from '@/theme/palette';
 
 const LOGIN_HERO_IMAGE = require('../../assets/login-hero.png');
@@ -79,6 +80,9 @@ export function LoginScreen() {
       setError('Sblocco rapido non riuscito. Usa le credenziali.');
     }
   }, [signIn]);
+
+  // Il login è la prima schermata: chiude il tempo di avvio.
+  useEffect(() => markAppReady('Login'), []);
 
   // Lo Sblocco Rapido compare solo se c'è hardware, un'impronta/volto registrato
   // e una sessione salvata: altrimenti è un bottone che non può funzionare.
@@ -205,6 +209,7 @@ export function LoginScreen() {
                 trailing={
                   <Pressable
                     hitSlop={10}
+                    accessibilityRole="button"
                     accessibilityLabel={showPassword ? 'Nascondi password' : 'Mostra password'}
                     onPress={() => setShowPassword((visible) => !visible)}
                     className="h-11 w-11 items-center justify-center rounded-xl"
@@ -229,6 +234,7 @@ export function LoginScreen() {
                   void handleSignIn();
                 }}
                 disabled={loading}
+                accessibilityRole="button"
                 accessibilityLabel="Accedi"
                 className="mt-6 h-[62px] min-w-[260px] flex-row items-center justify-center self-center rounded-control px-10"
                 style={
@@ -250,7 +256,8 @@ export function LoginScreen() {
                 ) : null}
                 <Text
                   className="text-[18px] font-extrabold tracking-tight"
-                  style={{ color: canSubmit ? '#F4F2ED' : palette.accent }}
+                  // Rosso pieno su nero è 3,2:1, troppo poco per un testo: a bottone vuoto, quello tenue.
+                  style={{ color: canSubmit ? '#F4F2ED' : palette.accentSoft }}
                 >
                   {loading ? 'Verifica…' : 'Accedi'}
                 </Text>
@@ -260,7 +267,7 @@ export function LoginScreen() {
             <Animated.View entering={FadeInDown.delay(140).duration(380)} className="mt-5 gap-5">
               <View className="w-full flex-row items-center gap-3">
                 <View className="h-px flex-1 bg-ink-700" />
-                <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-bone/40">oppure</Text>
+                <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-bone/60">oppure</Text>
                 <View className="h-px flex-1 bg-ink-700" />
               </View>
 
@@ -269,6 +276,7 @@ export function LoginScreen() {
                   void quickUnlock();
                 }}
                 disabled={!quickUnlockAvailable}
+                accessibilityRole="button"
                 accessibilityLabel="Sblocco rapido"
                 className={`h-[62px] min-w-[260px] flex-row items-center justify-center self-center rounded-control px-10 ${
                   quickUnlockAvailable ? 'bg-[#1E5BB8]' : 'bg-[#1A2336]'
@@ -281,7 +289,7 @@ export function LoginScreen() {
             </Animated.View>
 
             <View className="mt-auto items-center pt-10">
-              <Text className="text-[13px] font-semibold text-bone/40">
+              <Text className="text-[13px] font-semibold text-bone/60">
                 Problemi con le credenziali? Contatta il coordinatore
               </Text>
             </View>

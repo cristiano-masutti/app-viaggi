@@ -109,6 +109,7 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
       <View className="flex-row items-center gap-3 border-b border-ink-700 px-[18px] pb-3.5 pt-1">
         <Pressable
           onPress={() => navigation.goBack()}
+          accessibilityRole="button"
           accessibilityLabel="Annulla creazione viaggio"
           className="h-[42px] flex-row items-center gap-1.5 rounded-[14px] border border-ink-700 bg-ink-900 px-3"
         >
@@ -135,6 +136,7 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
               onPress={() => {
                 void pickCover();
               }}
+              accessibilityRole="button"
               accessibilityLabel={cover ? 'Cambia foto di copertina' : 'Carica una foto dal rullino'}
               style={{ height: COVER_HEIGHT }}
               className="w-full items-center justify-center overflow-hidden rounded-card border border-ink-700 bg-ink-900"
@@ -255,6 +257,7 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
               <Pressable
                 onPress={addCrewMember}
                 disabled={crewInput.trim().length === 0}
+                accessibilityRole="button"
                 accessibilityLabel="Aggiungi compagno"
                 className="h-[54px] items-center justify-center rounded-control border border-ink-700 bg-ink-850 px-4"
               >
@@ -267,6 +270,7 @@ export function CreateTripScreen({ navigation }: RootStackScreenProps<'CreateTri
                 {crew.map((name) => (
                   <Animated.View key={name} layout={LinearTransition.duration(180)} entering={FadeIn}>
                     <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel={`Rimuovi ${name}`}
                       onPress={() => setCrew((previous) => previous.filter((item) => item !== name))}
                       className="h-9 flex-row items-center gap-2 rounded-chip border border-ink-700 bg-ink-900 px-3.5"

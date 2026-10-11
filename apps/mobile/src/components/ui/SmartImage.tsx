@@ -46,6 +46,9 @@ export function SmartImage({
       recyclingKey={uri}
       contentFit={contentFit}
       transition={transition}
+      // Senza etichetta l'immagine è decorativa: chi la contiene (una card, un ricordo) dice cos'è.
+      // Sul web expo-image dà l'alt all'immagine caricata solo da qui, non da `alt`.
+      accessibilityLabel={rest.accessibilityLabel ?? rest.alt ?? ''}
       {...rest}
     />
   );

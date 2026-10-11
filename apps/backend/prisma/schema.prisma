@@ -54,6 +54,7 @@ model User {
   uploadedDocuments Document[]
   memories          Memory[]
   reactions         MemoryReaction[]
+  events            AppEvent[]
 }
 
 /**
@@ -85,6 +86,7 @@ model Trip {
   customs     Customs?
   emergencies EmergencyContact[]
   memories    Memory[]
+  events      AppEvent[]
 }
 
 enum TripRole {
@@ -366,4 +368,93 @@ model MemoryReaction {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([memoryId, userId])
+}
+
+/**
+ * ── Metriche d'uso ───────────────────────────────────────────────────
+ */
+
+enum AppEventName {
+  /// L'app si apre, o torna in primo piano, con una sessione attiva.
+  app_open
+  /// Una schermata vista: `screen` dice quale.
+  screen_view
+  /// Un documento aperto nel viewer (voucher, biglietto, polizza…).
+  document_open
+}
+
+enum AppPlatform {
+  ios
+  android
+  web
+}
+
+/// Un evento d'uso dell'app, per le metriche del pannello. Niente contenuti:
+/// chi, cosa, su quale viaggio, quando. Si cancellano dopo qualche mese
+/// (`npm run telemetry:prune`).
+model AppEvent {
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @db.Uuid
+  /// Il viaggio a cui si riferisce: solo se chi lo manda è nella crew.
+  tripId     String?      @db.Uuid
+  name       AppEventName
+  /// Per `screen_view`: il nome della schermata (es. `TripDetail`).
+  screen     String?
+  platform   AppPlatform
+  appVersion String?
+  /// Quando è successo sul telefono, ricondotto a un intervallo plausibile.
+  occurredAt DateTime
+  receivedAt DateTime     @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip Trip? @relation(fields: [tripId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([userId, occurredAt])
+  @@index([tripId, occurredAt])
+}
+
+enum TelemetrySource {
+  /// L'app mobile.
+  app
+  /// Il pannello di controllo dello staff.
+  panel
+}
+
+enum PerfMetric {
+  /// App: dall'avvio del codice alla prima schermata pronta (ms).
+  app_start
+  /// App: da quando si apre una schermata a quando mostra i dati (ms).
+  screen_ready
+  /// App e pannello: durata di una chiamata all'API vista dal client (ms).
+  api_latency
+  /// App: fotogrammi lenti (oltre 2 frame) in una finestra di 10 secondi (%).
+  slow_frames
+  /// App: blocchi oltre 700 ms in una finestra di 10 secondi (numero).
+  frozen_frames
+  /// Pannello, Web Vitals: Largest Contentful Paint (ms).
+  lcp
+  /// Pannello, Web Vitals: Interaction to Next Paint (ms).
+  inp
+  /// Pannello, Web Vitals: Cumulative Layout Shift (punteggio).
+  cls
+  /// Pannello, Web Vitals: Time To First Byte (ms).
+  ttfb
+}
+
+/// Un campione di prestazioni: quanto ci ha messo una cosa, su quale
+/// schermata o chiamata. Anonimo: serve a vedere come va il prodotto, non chi.
+model PerfSample {
+  id         String          @id @default(uuid()) @db.Uuid
+  source     TelemetrySource
+  platform   AppPlatform
+  appVersion String?
+  metric     PerfMetric
+  /// Schermata dell'app, pagina del pannello o chiamata (`GET /api/trips/{tripId}`).
+  target     String?
+  value      Float
+  occurredAt DateTime
+  receivedAt DateTime        @default(now())
+
+  @@index([metric, occurredAt])
 }

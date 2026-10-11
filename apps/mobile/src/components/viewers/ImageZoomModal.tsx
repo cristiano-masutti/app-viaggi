@@ -34,6 +34,7 @@ export function ImageZoomModal({ uri, title, subtitle, onClose }: Props) {
                 haptics.tap();
                 onClose();
               }}
+              accessibilityRole="button"
               accessibilityLabel="Chiudi"
               className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-white/15 bg-white/10"
             >

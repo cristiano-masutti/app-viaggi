@@ -47,6 +47,7 @@ export function DocumentViewerModal({ doc, onClose }: Props) {
                   haptics.tap();
                   onClose();
                 }}
+                accessibilityRole="button"
                 accessibilityLabel="Chiudi documento"
                 className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-ink-700 bg-ink-900"
               >
@@ -81,7 +82,7 @@ export function DocumentViewerModal({ doc, onClose }: Props) {
                 ) : null}
 
                 <View className="w-full items-center gap-1 rounded-card border border-ink-700 bg-ink-900 px-4 py-3.5">
-                  <Text className="text-[10.5px] font-bold uppercase tracking-[1px] text-bone/45">
+                  <Text className="text-[10.5px] font-bold uppercase tracking-[1px] text-bone/60">
                     Codice pratica
                   </Text>
                   <Text className="text-[18px] font-extrabold tracking-tight text-bone">{doc.code}</Text>

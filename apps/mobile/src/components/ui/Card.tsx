@@ -31,6 +31,7 @@ export function Card({ children, onEdit, editLabel = 'Modifica', className, styl
             haptics.tap();
             onEdit();
           }}
+          accessibilityRole="button"
           accessibilityLabel={editLabel}
           hitSlop={10}
           className="absolute right-3 top-3 z-10 h-8 w-8 items-center justify-center rounded-[11px] border border-ink-700 bg-ink-850"
@@ -61,7 +62,7 @@ export function CardRow({ icon, title, subtitle, inset = false }: CardRowProps) 
         <Text numberOfLines={1} className="text-[15px] font-extrabold tracking-tight text-bone">
           {title}
         </Text>
-        <Text numberOfLines={2} className="text-[12px] font-semibold text-bone/45">
+        <Text numberOfLines={2} className="text-[12px] font-semibold text-bone/60">
           {subtitle}
         </Text>
       </View>
@@ -74,7 +75,7 @@ export function SectionLabel({ children, accent = false }: { children: string; a
   return (
     <Text
       className={`text-[11px] font-extrabold uppercase tracking-[1.2px] ${
-        accent ? 'text-tangerine-soft' : 'text-bone/45'
+        accent ? 'text-tangerine-soft' : 'text-bone/60'
       }`}
     >
       {children}
@@ -87,7 +88,7 @@ export function SectionHeader({ title, hint, accent }: { title: string; hint?: s
   return (
     <View className="flex-row items-baseline justify-between gap-3">
       <SectionLabel accent={accent}>{title}</SectionLabel>
-      {hint ? <Text className="text-[11.5px] font-bold text-bone/40">{hint}</Text> : null}
+      {hint ? <Text className="text-[11.5px] font-bold text-bone/60">{hint}</Text> : null}
     </View>
   );
 }

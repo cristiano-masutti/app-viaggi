@@ -75,6 +75,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
               style={{ width: 104, height: 104, borderRadius: 52 }}
             />
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Cambia foto profilo"
               onPress={() => {
                 void pickImage((uri) => {
@@ -108,12 +109,13 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                     onChangeText={setBioDraft}
                     multiline
                     maxLength={BIO_MAX_LENGTH}
+                    accessibilityLabel="Bio"
                     placeholder="Racconta com'è viaggiare con te: ritmo, passioni, abitudini..."
                     placeholderTextColor={palette.textMuted}
                     textAlignVertical="top"
                     className="min-h-[112px] p-0 text-[14.5px] font-medium leading-[22px] text-bone"
                   />
-                  <Text className="self-end text-[11px] font-bold text-bone/40">
+                  <Text className="self-end text-[11px] font-bold text-bone/60">
                     {`${bioDraft.length}/${BIO_MAX_LENGTH}`}
                   </Text>
                 </View>
@@ -128,6 +130,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                     }}
                   />
                   <Pressable
+                    accessibilityRole="button"
                     accessibilityLabel="Salva bio"
                     onPress={() => {
                       patchProfile({ bio: bioDraft.trim() });
@@ -197,7 +200,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
           <Card>
             <View className="flex-row items-center gap-3">
               <View className="flex-1 gap-0.5">
-                <Text className="text-[10.5px] font-bold uppercase tracking-[0.8px] text-bone/45">
+                <Text className="text-[10.5px] font-bold uppercase tracking-[0.8px] text-bone/60">
                   Codice fiscale
                 </Text>
                 <Text className="text-[16px] font-extrabold tracking-tight text-white">
@@ -221,7 +224,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                 <View className="rounded-[16px] border border-tangerine/45 bg-ink-850 px-4 py-3.5">
                   <View className="mb-1.5 flex-row items-center gap-2">
                     <Stethoscope size={16} color={palette.accentSoft} strokeWidth={2} />
-                    <Text className="text-[10.5px] font-bold tracking-[0.6px] text-bone/45">
+                    <Text className="text-[10.5px] font-bold tracking-[0.6px] text-bone/60">
                       ALLERGIE E NOTE D&apos;EMERGENZA
                     </Text>
                   </View>
@@ -230,12 +233,13 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                     onChangeText={setMedicalNotesDraft}
                     multiline
                     maxLength={BIO_MAX_LENGTH}
+                    accessibilityLabel="Allergie e note mediche"
                     placeholder="Allergie, intolleranze, farmaci o indicazioni utili in emergenza"
                     placeholderTextColor={palette.textMuted}
                     textAlignVertical="top"
                     className="min-h-[112px] p-0 text-[14.5px] font-medium leading-[22px] text-bone"
                   />
-                  <Text className="self-end text-[11px] font-bold text-bone/40">
+                  <Text className="self-end text-[11px] font-bold text-bone/60">
                     {`${medicalNotesDraft.length}/${BIO_MAX_LENGTH}`}
                   </Text>
                 </View>
@@ -254,6 +258,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                     }}
                   />
                   <Pressable
+                    accessibilityRole="button"
                     accessibilityLabel="Salva allergie e note mediche"
                     onPress={() => {
                       patchProfile({ medicalNotes: medicalNotesDraft.trim() });
@@ -304,6 +309,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
                 </Text>
               </View>
               <Switch
+                accessibilityLabel="Sblocco Rapido"
                 value={profile.biometricUnlock}
                 onValueChange={(value) => {
                   haptics.select();
@@ -345,7 +351,7 @@ export function ProfileScreen(_props: MainTabScreenProps<'Profile'>) {
 function MiniField({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-1 gap-0.5 rounded-[15px] border border-ink-700 bg-ink-850 px-3.5 py-3">
-      <Text className="text-[10.5px] font-bold tracking-[0.6px] text-bone/45">{label}</Text>
+      <Text className="text-[10.5px] font-bold tracking-[0.6px] text-bone/60">{label}</Text>
       <Text className="text-[14.5px] font-extrabold tracking-tight text-bone">{value}</Text>
     </View>
   );
@@ -356,7 +362,7 @@ function InfoBlock({ icon, label, value }: { icon: React.ReactNode; label: strin
     <View className="gap-1.5 rounded-[16px] border border-ink-700 bg-ink-850 px-4 py-3.5">
       <View className="flex-row items-center gap-2">
         {icon}
-        <Text className="text-[10.5px] font-bold tracking-[0.6px] text-bone/45">{label}</Text>
+        <Text className="text-[10.5px] font-bold tracking-[0.6px] text-bone/60">{label}</Text>
       </View>
       <Text className="text-[14px] font-semibold leading-5 text-bone">{value}</Text>
     </View>

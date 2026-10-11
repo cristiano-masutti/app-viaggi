@@ -4,7 +4,7 @@ import { todayISO } from '@/lib/dates';
 
 import { useApi } from './ApiProvider';
 import { unwrap } from './client';
-import type { TripRole, TripStatus } from './types';
+import type { TelemetrySource, TripRole, TripStatus } from './types';
 
 /**
  * Le letture e le azioni del pannello. Tutto sta sotto la chiave `admin`: dopo
@@ -20,7 +20,12 @@ const keys = {
   trip: (tripId: string, today: string) => ['admin', 'trip', tripId, today] as const,
   users: (params: object) => ['admin', 'users', params] as const,
   user: (userId: string, today: string) => ['admin', 'user', userId, today] as const,
+  usage: (params: object) => ['admin', 'usage', params] as const,
+  performance: (params: object) => ['admin', 'performance', params] as const,
 };
+
+/** Il fuso di chi guarda: i giorni dei grafici sono i suoi, non quelli di UTC. */
+const viewerTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 export function useAdminSession() {
   const api = useApi();
@@ -86,6 +91,27 @@ export function useUser(userId: string) {
       unwrap(api.GET('/api/admin/users/{userId}', { params: { path: { userId }, query: { today } } })).then(
         (data) => data.user,
       ),
+  });
+}
+
+export function useUsage({ days }: { days: number }) {
+  const api = useApi();
+  const query = { days, today: todayISO(), tz: viewerTimeZone() };
+  return useQuery({
+    queryKey: keys.usage(query),
+    queryFn: () => unwrap(api.GET('/api/admin/usage', { params: { query } })),
+    // Cambiando periodo il grafico vecchio resta, attenuato, finché arriva il nuovo.
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function usePerformance({ days, source }: { days: number; source: TelemetrySource }) {
+  const api = useApi();
+  const query = { days, source, today: todayISO(), tz: viewerTimeZone() };
+  return useQuery({
+    queryKey: keys.performance(query),
+    queryFn: () => unwrap(api.GET('/api/admin/performance', { params: { query } })),
+    placeholderData: keepPreviousData,
   });
 }
 

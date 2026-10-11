@@ -44,6 +44,7 @@ export function FilterChipRow({ chips, value, onChange, accessibilityLabel, cont
         return (
           <Pressable
             key={chip.key}
+            accessibilityRole="button"
             accessibilityLabel={chip.label}
             accessibilityState={{ selected: active }}
             onPress={() => {

@@ -262,6 +262,25 @@ caricamento fallisce, e si riallinea al server tornandoci sopra o trascinando in
 giù. Il dettaglio di un viaggio si rilegge a ogni apertura: programma e ricordi
 cambiano anche dai telefoni dei compagni.
 
+### Metriche d'uso e prestazioni
+
+Col backend (mai nel prototipo) `src/telemetry/` misura come si usa l'app e
+quanto è veloce, e lo manda a lotti a `POST /api/telemetry`: ogni 30 secondi,
+quando l'app va in background e quando si accumulano molti eventi.
+
+- **Uso**, legato alla persona: apertura dell'app (accesso o ritorno dal
+  background, non il centro notifiche), schermata vista, documento aperto.
+  Il pannello ne ricava l'ultimo accesso e chi non è mai entrato.
+- **Prestazioni**, anonime: avvio fino alla prima schermata pronta, tempo di
+  ogni schermata per mostrare i dati (`useScreenReady`), durata di ogni
+  chiamata (per percorso della specifica, senza id), fotogrammi lenti e blocchi
+  campionati 10 secondi al minuto mentre l'app è in primo piano.
+
+Niente contenuti: nomi di schermate e chiamate, durate, istanti. Senza rete i
+lotti aspettano (fino a 200 voci); quelli che il backend rifiuta si scartano.
+All'uscita dall'account gli eventi della persona si buttano, anche quelli di un
+lotto già partito.
+
 ### Test
 
 `npm test` usa Jest con il preset `jest-expo`; i file `*.test.ts` stanno
@@ -315,7 +334,12 @@ identica su iOS e Android.
 
 Il target resta iOS/Android: `react-native-web` è incluso perché rende `npm run
 web` una via di verifica rapida, non perché il web sia una piattaforma di
-destinazione.
+destinazione. Gli smoke test in [`e2e/`](../../e2e) usano proprio la build web,
+contro il backend vero: flussi, budget di velocità e fluidità con la CPU
+rallentata 4 volte, contrasto e accessibilità (ogni elemento toccabile ha un
+ruolo e un nome, che servono anche a VoiceOver e TalkBack), confronto con le
+immagini di riferimento. I numeri dei telefoni veri arrivano dalla telemetria,
+nella pagina Prestazioni del pannello.
 
 ---
 

@@ -20,3 +20,13 @@ export function pageFromParams(params: URLSearchParams): number {
 }
 export const pageParam = (page: number | undefined) =>
   page === undefined ? undefined : page > 0 ? String(page + 1) : null;
+
+/** I periodi delle metriche: una settimana, un mese, una stagione. */
+export const RANGES = [7, 30, 90] as const;
+export type Range = (typeof RANGES)[number];
+
+/** `giorni=7|30|90`; qualunque altro valore torna ai 30 giorni. */
+export function rangeFromParams(params: URLSearchParams): Range {
+  const raw = params.get('giorni');
+  return RANGES.find((range) => String(range) === raw) ?? 30;
+}

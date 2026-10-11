@@ -31,3 +31,13 @@ export type PlanInsurance = NonNullable<TripPlan['documents']['insurance']>;
 export type PlanCustoms = NonNullable<TripPlan['documents']['customs']>;
 export type PlanEmergency = TripPlan['emergencies'][number];
 export type PlanInvitation = TripPlan['invitations'][number];
+
+/** Le metriche: uso dell'app (eventi legati alle persone) e prestazioni (campioni anonimi). */
+export type AdminUsage = Json<paths['/api/admin/usage']['get']['responses'][200]>;
+export type AdminPerformance = Json<paths['/api/admin/performance']['get']['responses'][200]>;
+export type PerfMetric = AdminPerformance['metrics'][number]['metric'];
+export type TelemetrySource = AdminPerformance['source'];
+export type AppPlatform = AdminUsage['platforms'][number]['platform'];
+export type TelemetryBatch = NonNullable<
+  paths['/api/telemetry']['post']['requestBody']
+>['content']['application/json'];
