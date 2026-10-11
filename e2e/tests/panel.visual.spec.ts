@@ -83,7 +83,8 @@ async function settle(page: Page) {
 
 for (const { name: size, viewport, touch } of VIEWPORTS) {
   test.describe(`pannello · ${size}`, () => {
-    test.use({ viewport, hasTouch: touch });
+    // Il pannello rispetta "riduci movimento": entrate e dissolvenze durano un istante.
+    test.use({ viewport, hasTouch: touch, reducedMotion: 'reduce' });
 
     test(`accesso · ${size}`, async ({ page }) => {
       await page.goto(`${URLS.panel}/`);

@@ -182,8 +182,25 @@ export async function accessibilityProblems(page: Page, skipRules: string[] = []
   );
 }
 
+/**
+ * Aspetta la fine di ogni animazione che finisce (un'entrata, una dissolvenza):
+ * a metà, un testo è semitrasparente e il contrasto misurato sarebbe falso.
+ * Quelle in loop (scheletri, puntino LIVE) non finiscono mai: si ignorano.
+ */
+export async function waitForAnimations(page: Page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+}
+
 /** Le due verifiche insieme: un elenco vuoto vuol dire "visivamente a posto". */
 export async function expectVisuallySound(page: Page, options: LayoutOptions = {}) {
+  await waitForAnimations(page);
   const layout = await layoutProblems(page, options);
   const accessibility = await accessibilityProblems(page, options.skipRules);
   expect.soft(layout, 'problemi di layout').toEqual([]);
