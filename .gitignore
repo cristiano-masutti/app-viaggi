@@ -58,3 +58,6 @@ coverage/
 
 # npm run demo: i log dei servizi
 .demo/
+
+# Build del backend su Vercel (scripts/vercel-build.ts)
+apps/backend/public/

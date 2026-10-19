@@ -359,6 +359,34 @@ un'origine web: va aggiunta a `CORS_ORIGIN` (in sviluppo
 `http://localhost:5173`). La creazione degli account usa la stessa
 `SUPABASE_SERVICE_ROLE_KEY` dello storage.
 
+## Deploy (Vercel + Supabase)
+
+Il backend gira come una Vercel Function: [`vercel.json`](./vercel.json) manda
+ogni richiesta ad [`api/index.js`](./api/index.js), che esporta l'handler
+compilato da [`src/vercel.ts`](./src/vercel.ts). L'app è la stessa di
+`server.ts` ([`src/bootstrap.ts`](./src/bootstrap.ts)); nasce alla prima
+richiesta e resta viva con l'istanza. Progetto Vercel con *Root Directory*
+`apps/backend`.
+
+La build ([`scripts/vercel-build.ts`](./scripts/vercel-build.ts)), solo in
+produzione, applica le migrazioni con `prisma migrate deploy` prima di
+compilare: se una migrazione fallisce resta online il deploy precedente.
+
+Su Supabase il backend si collega con un ruolo suo, `app_backend`, proprietario
+delle tabelle (le crea lui con le migrazioni). Le tabelle hanno RLS accesa e
+nessuna policy: la Data API di Supabase, raggiungibile con la chiave
+publishable delle app, non le legge né le scrive. Una tabella nuova va chiusa
+nella sua migrazione (`ALTER TABLE … ENABLE ROW LEVEL SECURITY`).
+
+| Variabile | Valore |
+| --- | --- |
+| `DATABASE_URL` | pooler in transaction mode: `postgresql://app_backend.<ref>:<password>@aws-…-<regione>.pooler.supabase.com:6543/postgres` |
+| `MIGRATION_DATABASE_URL` | lo stesso in session mode (porta `5432`): `migrate deploy` usa lock che il transaction mode non regge |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys (la secret key `sb_secret_…` va bene) |
+| `SUPABASE_STORAGE_BUCKET` | il bucket privato dei file |
+| `CORS_ORIGIN` | le origini del pannello e dell'app web |
+| `UPLOAD_MAX_BYTES` | `4194304`: Vercel rifiuta le richieste oltre 4,5 MB prima che arrivino all'API |
+
 ## Dipendenze: note
 
 - Per **aggiungere o aggiornare** dipendenze usa Node 24 (`.nvmrc`, npm 11):
@@ -383,9 +411,9 @@ un'origine web: va aggiunta a `CORS_ORIGIN` (in sviluppo
 - **Media pesanti:** copertine e avatar (servono un bucket pubblico o URL
   firmati nelle liste); video grandi caricati direttamente su Supabase con un
   URL firmato di upload, invece che attraverso l'API (oggi il limite è
-  `UPLOAD_MAX_BYTES` per tutto).
+  `UPLOAD_MAX_BYTES` per tutto, e su Vercel non può superare 4,5 MB).
 - **Pulizia:** un job che cancelli i documenti caricati e mai collegati a uno
   slot, e i file rimasti orfani per un errore dello storage.
 - **Hardening:** rate limiting (soprattutto su `/api/invites`).
-- **Deploy:** Dockerfile, ambiente di staging, `prisma migrate deploy` nella
-  pipeline di rilascio, error tracking.
+- **Deploy:** ambiente di staging (oggi le preview di Vercel non hanno un
+  database), error tracking.

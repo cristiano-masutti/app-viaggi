@@ -1,33 +1,11 @@
 import 'dotenv/config';
 
-import { buildApp } from './app.js';
-import { createSupabaseAccountAdmin } from './auth/account-admin.js';
-import { createSupabaseTokenVerifier } from './auth/token-verifier.js';
-import { loadConfig } from './config/env.js';
-import { createPrismaClient } from './lib/prisma.js';
-import { createSupabaseStorage } from './storage/supabase-storage.js';
+import { createProductionApp } from './bootstrap.js';
 
 /** Oltre questo tempo lo spegnimento non è più "graceful": si esce comunque. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-const config = loadConfig(process.env);
-const prisma = createPrismaClient(config.DATABASE_URL);
-const storage = createSupabaseStorage({
-  url: config.SUPABASE_URL,
-  serviceRoleKey: config.SUPABASE_SERVICE_ROLE_KEY,
-  bucket: config.SUPABASE_STORAGE_BUCKET,
-});
-
-const tokenVerifier = createSupabaseTokenVerifier(config.SUPABASE_URL);
-const accountAdmin = createSupabaseAccountAdmin({
-  url: config.SUPABASE_URL,
-  serviceRoleKey: config.SUPABASE_SERVICE_ROLE_KEY,
-});
-
-const app = await buildApp({ config, prisma, storage, tokenVerifier, accountAdmin });
-app.addHook('onClose', async () => {
-  await prisma.$disconnect();
-});
+const { app, prisma } = await createProductionApp(process.env);
 
 let shuttingDown = false;
 
@@ -56,7 +34,7 @@ process.once('SIGINT', (signal) => void shutdown(signal));
 process.once('SIGTERM', (signal) => void shutdown(signal));
 
 try {
-  await app.listen({ host: config.HOST, port: config.PORT });
+  await app.listen({ host: app.config.HOST, port: app.config.PORT });
 } catch (error) {
   app.log.fatal({ err: error }, 'Failed to start backend');
   await prisma.$disconnect();

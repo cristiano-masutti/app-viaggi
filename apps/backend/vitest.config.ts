@@ -29,7 +29,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/generated/**', 'src/server.ts'],
+      exclude: ['src/generated/**', 'src/server.ts', 'src/bootstrap.ts', 'src/vercel.ts'],
       reporter: ['text', 'html', 'lcov'],
     },
   },
